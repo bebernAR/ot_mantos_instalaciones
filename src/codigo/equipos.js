@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Button,
     TextField,
@@ -10,8 +10,13 @@ import {
     TableHead,
     TableRow,
     Paper,
+    MenuItem,
+    Select,
+    InputLabel,
+    FormControl,
 } from '@mui/material';
 import { useForm } from 'react-hook-form';
+import axios from 'axios';
 
 const Equipos = () => {
     const [data, setData] = useState([
@@ -30,8 +35,25 @@ const Equipos = () => {
         // Agrega más datos aquí según lo necesites
     ]);
 
-    const { register, handleSubmit, reset } = useForm();
+    const { register, handleSubmit, reset, setValue } = useForm();
     const [editingIndex, setEditingIndex] = useState(null);
+    const [familia, setFamilia] = useState('');
+    const [maquinas, setMaquinas] = useState([]);
+    const [selectedMachine, setSelectedMachine] = useState('');
+
+    useEffect(() => {
+        if (familia) {
+            axios.get(`https://teknia.app/api/actividades_tecnicas/maquinas/${familia}`)
+                .then(response => {
+                    setMaquinas(response.data.map(machine => machine.maquina));
+                })
+                .catch(error => {
+                    console.error('Error fetching machine data:', error);
+                });
+        } else {
+            setMaquinas([]);
+        }
+    }, [familia]);
 
     const onSubmit = (formData) => {
         if (editingIndex !== null) {
@@ -44,11 +66,16 @@ const Equipos = () => {
             setData([...data, formData]);
         }
         reset();
+        setFamilia('');
+        setSelectedMachine('');
     };
 
     const editRow = (index) => {
         setEditingIndex(index);
-        reset(data[index]);
+        const item = data[index];
+        setFamilia(item.familia);
+        setSelectedMachine(item.nombreMáquina);
+        reset(item);
     };
 
     const deleteRow = (index) => {
@@ -58,12 +85,42 @@ const Equipos = () => {
 
     return (
         <div style={{ padding: '20px' }}>
-            <h1>Gestión de Actividades</h1>
+            <h1>Gestión de Equipos</h1>
             <Grid container spacing={3}>
                 <Grid item xs={12} md={4}>
                     <form onSubmit={handleSubmit(onSubmit)} style={{ marginBottom: '20px' }}>
-                        <TextField {...register('familia')} label="Familia del Equipo" variant="outlined" fullWidth margin="normal" />
-                        <TextField {...register('nombreMáquina')} label="Nombre de la Máquina" variant="outlined" fullWidth margin="normal" />
+                        <FormControl fullWidth margin="normal">
+                            <InputLabel>Familia del Equipo</InputLabel>
+                            <Select
+                                {...register('familia')}
+                                value={familia}
+                                onChange={(e) => {
+                                    setFamilia(e.target.value);
+                                    setValue('familia', e.target.value);
+                                }}
+                                label="Familia del Equipo"
+                            >
+                                {['Router', 'Láser Co2', 'Láser Fibra Óptica', 'Plasma', 'Dobladora', 'Grua Neumática', 'Externa'].map(option => (
+                                    <MenuItem key={option} value={option}>{option}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                        <FormControl fullWidth margin="normal">
+                            <InputLabel>Nombre de la Máquina</InputLabel>
+                            <Select
+                                {...register('nombreMáquina')}
+                                value={selectedMachine}
+                                onChange={(e) => {
+                                    setSelectedMachine(e.target.value);
+                                    setValue('nombreMáquina', e.target.value);
+                                }}
+                                label="Nombre de la Máquina"
+                            >
+                                {maquinas.map(machine => (
+                                    <MenuItem key={machine} value={machine}>{machine}</MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
                         <Button type="submit" variant="contained" color="primary" fullWidth>
                             {editingIndex !== null ? 'Actualizar Equipo' : 'Agregar Equipo'}
                         </Button>
@@ -77,7 +134,6 @@ const Equipos = () => {
                         <Table>
                             <TableHead>
                                 <TableRow>
-
                                     <TableCell>Familia</TableCell>
                                     <TableCell>Nombre de la Máquina</TableCell>
                                     <TableCell>Acciones</TableCell>
@@ -86,7 +142,6 @@ const Equipos = () => {
                             <TableBody>
                                 {data.map((row, index) => (
                                     <TableRow key={index}>
-
                                         <TableCell>{row.familia}</TableCell>
                                         <TableCell>{row.nombreMáquina}</TableCell>
                                         <TableCell>
