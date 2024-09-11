@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useAuth } from './context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 function FirebaseForm(){
   const auth = useAuth()
+  const navigate = useNavigate();
   const [emailRegister, setEmailRegister] = useState("")
   const [passwordRegister, setPasswordRegister] = useState("")
 
@@ -11,22 +13,37 @@ function FirebaseForm(){
 
   console.log(emailRegister, passwordRegister, "stateFormsFirebase")
 
-  const handleRegister = (e) =>{
-    e.preventDefault()
-    auth.register(emailRegister, passwordRegister)
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    try {
+      await auth.register(emailRegister, passwordRegister);
+      navigate('/inicio'); // Redirige a la pantalla de inicio después del registro
+    } catch (error) {
+      console.error('Error en el registro:', error);
+    }
   };
 
-  const handleGoogle = (e) =>{
-    e.preventDefault()
-    auth.loginWithGoogle()
+  const handleGoogle = async (e) => {
+    e.preventDefault();
+    try {
+      await auth.loginWithGoogle();
+      navigate('/inicio'); // Redirige a la pantalla de inicio después del login con Google
+    } catch (error) {
+      console.error('Error en el login con Google:', error);
+    }
   };
 
-  const handleLogin = (e) =>{
-    e.preventDefault()
-    auth.login()
-  }
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      await auth.login(email, password);
+      navigate('/inicio'); // Redirige a la pantalla de inicio después del login
+    } catch (error) {
+      console.error('Error en el login:', error);
+    }
+  };
 
-  console.log(emailRegister,passwordRegister,"stateFormsFirebase")
+
   
   return(
     <div className='App'>
