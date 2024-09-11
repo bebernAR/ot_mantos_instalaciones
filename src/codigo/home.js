@@ -1,188 +1,245 @@
-import React, { useState } from 'react';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
-import { Button } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { DndProvider, useDrag, useDrop } from 'react-dnd';
+import { HTML5Backend } from 'react-dnd-html5-backend';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 
-const initialActivities = [
-  { id: 'MTP0001', content: 'Revisión de estado de baleros y guías lineales' },
-  { id: 'MTP0002', content: 'Cambio de agua de chiller (Fiber)' },
-  { id: 'MTP0003', content: 'Limpieza guías lineales' },
-  { id: 'MTP0004', content: 'Limpieza cremalleras' },
-];
+const ItemType = 'ACTIVITY';
 
-const initialMachines = {
-  shop: {
-    name: 'Shop',
-    items: [],
-  },
-  maker: {
-    name: 'Maker',
-    items: [],
-  },
-  fiber: {
-    name: 'Fiber',
-    items: [],
-  },
+const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => {
+  const [{ isDragging }, dragRef] = useDrag({
+    type: ItemType,
+    item: { index, origin },
+    collect: (monitor) => ({
+      isDragging: monitor.isDragging(),
+    }),
+  });
+
+  return (
+    <div
+      ref={dragRef}
+      style={{
+        padding: '15px',
+        margin: '8px 0',
+        backgroundColor: isDragging ? '#f0f0f0' : '#fff',
+        border: '1px solid #ddd',
+        borderRadius: '8px',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+        position: 'relative',
+        transition: 'background-color 0.2s ease',
+        cursor: 'grab',
+        fontFamily: 'Arial, sans-serif',
+        fontSize: '14px',
+      }}
+    >
+      {activity.titulo}
+      {origin !== 'activities' && (
+        <span
+          onClick={() => removeActivity(index, origin)}
+          style={{
+            position: 'absolute',
+            top: '5px',
+            right: '10px',
+            cursor: 'pointer',
+            color: 'red',
+            fontSize: '14px',
+          }}
+        >
+          ✖
+        </span>
+      )}
+    </div>
+  );
+};
+
+const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) => {
+  const [{ isOver }, dropRef] = useDrop({
+    accept: ItemType,
+    drop: (item) => moveActivity(item.index, machine.id, item.origin),
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  });
+
+  return (
+    <div
+      ref={dropRef}
+      style={{
+        padding: '20px',
+        backgroundColor: isOver ? '#e3f2fd' : '#f9f9f9',
+        minHeight: '300px',
+        border: '1px solid #ddd',
+        borderRadius: '10px',
+        marginBottom: '20px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        transition: 'background-color 0.3s ease',
+        textAlign: 'center',
+      }}
+    >
+      <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>{machine.name}</h3>
+      {machine.items.map((item, index) => (
+        <Activity
+          key={item.id}
+          activity={item}
+          index={index}
+          moveActivity={moveActivity}
+          origin={machine.id}
+          removeActivity={removeActivity}
+        />
+      ))}
+      <Button
+        variant="contained"
+        color="primary"
+        style={{
+          marginTop: '20px',
+          backgroundColor: '#007bff',
+          color: '#fff',
+          borderRadius: '20px',
+          padding: '10px 20px',
+          textTransform: 'none',
+          boxShadow: '0 4px 8px rgba(0, 123, 255, 0.3)',
+        }}
+        onClick={() => handleSave(machine.id)}
+      >
+        Guardar 
+      </Button>
+    </div>
+  );
 };
 
 const Home = () => {
-  const [activities, setActivities] = useState(initialActivities);
-  const [machines, setMachines] = useState(initialMachines);
+  const [activities, setActivities] = useState([]);
+  const [machines, setMachines] = useState({
+    shop: {
+      id: 'shop',
+      name: 'Shop',
+      items: [],
+    },
+    maker: {
+      id: 'maker',
+      name: 'Maker',
+      items: [],
+    },
+    fiber: {
+      id: 'fiber',
+      name: 'Fiber',
+      items: [],
+    },
+  });
 
-  const onDragEnd = (result) => {
-    const { source, destination } = result;
+  const [modalOpen, setModalOpen] = useState(false);
+  const [duplicateActivity, setDuplicateActivity] = useState(null);
 
-    if (!destination) return;
-
-    if (source.droppableId === destination.droppableId) {
-      const newItems = Array.from(
-        source.droppableId === 'activities'
-          ? activities
-          : machines[source.droppableId].items
-      );
-      const [removed] = newItems.splice(source.index, 1);
-      newItems.splice(destination.index, 0, removed);
-      if (source.droppableId === 'activities') {
-        setActivities(newItems);
-      } else {
-        setMachines({
-          ...machines,
-          [source.droppableId]: {
-            ...machines[source.droppableId],
-            items: newItems,
-          },
-        });
+  // Hacer la solicitud a la API cuando se monte el componente
+  useEffect(() => {
+    const fetchActivities = async () => {
+      try {
+        const response = await fetch('https://teknia.app/api3/obtener_actividades_mantto');
+        const data = await response.json();
+        setActivities(data); // Establecer las actividades obtenidas de la API en el estado
+      } catch (error) {
+        console.error('Error al obtener las actividades:', error);
       }
-    } else {
-      const sourceItems = Array.from(
-        source.droppableId === 'activities'
-          ? activities
-          : machines[source.droppableId].items
-      );
-      const [removed] = sourceItems.splice(source.index, 1);
-      const destItems = Array.from(machines[destination.droppableId].items);
-      destItems.splice(destination.index, 0, removed);
+    };
 
-      if (source.droppableId === 'activities') {
-        setActivities(sourceItems);
-      } else {
-        setMachines({
-          ...machines,
-          [source.droppableId]: {
-            ...machines[source.droppableId],
-            items: sourceItems,
-          },
-        });
-      }
-      setMachines({
-        ...machines,
-        [destination.droppableId]: {
-          ...machines[destination.droppableId],
-          items: destItems,
+    fetchActivities();
+  }, []);
+
+  const moveActivity = (index, destinationId, originId) => {
+    const activity = originId === 'activities' ? activities[index] : machines[originId].items[index];
+
+    // Verificar si la actividad ya existe en la máquina de destino
+    const activityAlreadyExists = machines[destinationId].items.some((item) => item.id === activity.id);
+
+    if (!activityAlreadyExists) {
+      setMachines((prev) => ({
+        ...prev,
+        [destinationId]: {
+          ...prev[destinationId],
+          items: [...prev[destinationId].items, activity],
         },
-      });
+      }));
+    } else {
+      // Mostrar el modal si la actividad ya está agregada
+      setDuplicateActivity(activity);
+      setModalOpen(true);
+    }
+  };
+
+  const removeActivity = (index, originId) => {
+    // Regresar la actividad a la lista de actividades si está en una máquina
+    if (originId !== 'activities') {
+      const activity = machines[originId].items[index];
+      setMachines((prev) => ({
+        ...prev,
+        [originId]: {
+          ...prev[originId],
+          items: prev[originId].items.filter((_, i) => i !== index),
+        },
+      }));
     }
   };
 
   const handleSave = (machineId) => {
-    console.log(`Actividades guardadas para ${machines[machineId].name}: `, machines[machineId].items);
+    console.log(`Actividades guardadas para ${machines[machineId].name}:`, machines[machineId].items);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    setDuplicateActivity(null);
   };
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Tabla de Asignación de Actividades a Equipos</h1>
-      <DragDropContext onDragEnd={onDragEnd}>
-        <div style={{ display: 'flex' }}>
-          <Droppable droppableId="activities">
-            {(provided) => (
-              <div
-                ref={provided.innerRef}
-                {...provided.droppableProps}
-                style={{
-                  marginRight: '20px',
-                  minWidth: '200px',
-                  padding: '10px',
-                  backgroundColor: '#f0f0f0',
-                }}
-              >
-                <h3>Actividades</h3>
-                {activities.map((activity, index) => (
-                  <Draggable key={activity.id} draggableId={activity.id} index={index}>
-                    {(provided) => (
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        style={{
-                          margin: '8px 0',
-                          padding: '10px',
-                          backgroundColor: '#fff',
-                          border: '1px solid #ddd',
-                          ...provided.draggableProps.style,
-                        }}
-                      >
-                        {activity.content}
-                      </div>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </div>
-            )}
-          </Droppable>
-
-          <div style={{ flex: 1, display: 'flex', justifyContent: 'space-around' }}>
-            {Object.keys(machines).map((machineId) => (
-              <Droppable key={machineId} droppableId={machineId}>
-                {(provided) => (
-                  <div
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                    style={{
-                      width: '200px',
-                      minHeight: '300px',
-                      padding: '10px',
-                      backgroundColor: '#f9f9f9',
-                      border: '1px solid #ddd',
-                    }}
-                  >
-                    <h3>{machines[machineId].name}</h3>
-                    {machines[machineId].items.map((item, index) => (
-                      <Draggable key={item.id} draggableId={item.id} index={index}>
-                        {(provided) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
-                            style={{
-                              margin: '8px 0',
-                              padding: '10px',
-                              backgroundColor: '#fff',
-                              border: '1px solid #ddd',
-                              ...provided.draggableProps.style,
-                            }}
-                          >
-                            {item.content}
-                          </div>
-                        )}
-                      </Draggable>
-                    ))}
-                    {provided.placeholder}
-                    <Button
-                      variant="contained"
-                      color="secondary"
-                      onClick={() => handleSave(machineId)}
-                      style={{ marginTop: '20px' }}
-                    >
-                      Guardar {machines[machineId].name}
-                    </Button>
-                  </div>
-                )}
-              </Droppable>
+    <DndProvider backend={HTML5Backend}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px', backgroundColor: '#f4f6f9' }}>
+        {/* Lista de actividades */}
+        <div style={{ width: '30%', padding: '10px', border: '1px solid #ddd', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', backgroundColor: '#fff' }}>
+          <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>Actividades</h3>
+          <div style={{ minHeight: '300px', backgroundColor: '#f9f9f9', padding: '10px', borderRadius: '10px' }}>
+            {activities.map((activity, index) => (
+              <Activity
+                key={activity.id}
+                activity={activity}
+                index={index}
+                moveActivity={moveActivity}
+                origin="activities"
+                removeActivity={removeActivity}
+              />
             ))}
           </div>
         </div>
-      </DragDropContext>
-    </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-around', width: '65%' }}>
+          {Object.values(machines).map((machine) => (
+            <MachineDropZone
+              key={machine.id}
+              machine={machine}
+              moveActivity={moveActivity}
+              handleSave={handleSave}
+              removeActivity={removeActivity}
+            />
+          ))}
+        </div>
+      </div>
+
+      <Dialog
+        open={modalOpen}
+        onClose={handleCloseModal}
+        aria-labelledby="alert-dialog-title"
+        aria-describedby="alert-dialog-description"
+      >
+        <DialogTitle id="alert-dialog-title">{"Actividad duplicada"}</DialogTitle>
+        <DialogContent>
+          <DialogContentText id="alert-dialog-description">
+            La actividad "{duplicateActivity?.titulo}" ya está agregada a la máquina.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseModal} color="primary" autoFocus>
+            OK
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </DndProvider>
   );
 };
 
