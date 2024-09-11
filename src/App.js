@@ -1,14 +1,18 @@
 import React from 'react';
-import logo from './logo.svg';
+import { AuthProvider } from './context/AuthContext';
 import './App.css';
-import Auth from './Auth';
+import FirebaseForm from './LogRegForm';
+
 
 function App() {
   return (
-    <div className="App">
-      <p>Usuario: </p>
-      <Auth />
-    </div>
+    <AuthProvider>
+      <div className="App">
+        <h1>Iniciar Sesión </h1>
+        <FirebaseForm />
+      </div>
+    </AuthProvider>
+
   );
 }
 
