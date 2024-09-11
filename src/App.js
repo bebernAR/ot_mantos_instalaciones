@@ -17,7 +17,7 @@ function App() {
       <AppBar position="static" sx={{ backgroundColor: 'black' }}> {/* Cambiar el fondo a negro */}
         <Toolbar>
           <IconButton edge="start" color="inherit" aria-label="logo" component={RouterLink} to="/" style={{ marginRight: '20px' }}>
-            <img src={`${process.env.PUBLIC_URL}/logo_asiarob.png`} alt="Logo" style={{ width: '160px', height: '40px' }} />
+            <img src={`/logo_asiarob.png`} alt="Logo" style={{ width: '160px', height: '40px' }} />
           </IconButton>
 
           {/* Título de la aplicación */}
