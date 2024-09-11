@@ -16,7 +16,7 @@ function App() {
     <Router>
       <AppBar position="static" sx={{ backgroundColor: 'black' }}> {/* Cambiar el fondo a negro */}
         <Toolbar>
-          <IconButton edge="start" color="inherit" aria-label="logo" component={RouterLink} to="/" style={{ marginRight: '20px' }}>
+          <IconButton edge="" color="inherit" aria-label="logo" component={RouterLink} to="/" style={{ marginRight: '20px' }}>
             <img src={`/logo_asiarob.png`} alt="Logo" style={{ width: '160px', height: '40px' }} />
           </IconButton>
 
