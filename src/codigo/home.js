@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
+import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 
 const ItemType = 'ACTIVITY';
 
@@ -54,11 +54,13 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => 
 const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) => {
   const [{ isOver }, dropRef] = useDrop({
     accept: ItemType,
-    drop: (item) => moveActivity(item.index, machine.id, item.origin),
+    drop: (item) => moveActivity(item.index, machine.name, item.origin),
     collect: (monitor) => ({
       isOver: monitor.isOver(),
     }),
   });
+
+  const items = machine.items || [];
 
   return (
     <div
@@ -76,13 +78,13 @@ const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) 
       }}
     >
       <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>{machine.name}</h3>
-      {machine.items.map((item, index) => (
+      {items.map((item, index) => (
         <Activity
           key={item.id}
           activity={item}
           index={index}
           moveActivity={moveActivity}
-          origin={machine.id}
+          origin={machine.name}
           removeActivity={removeActivity}
         />
       ))}
@@ -98,9 +100,9 @@ const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) 
           textTransform: 'none',
           boxShadow: '0 4px 8px rgba(0, 123, 255, 0.3)',
         }}
-        onClick={() => handleSave(machine.id)}
+        onClick={() => handleSave(machine.name)}
       >
-        Guardar 
+        Guardar
       </Button>
     </div>
   );
@@ -108,28 +110,44 @@ const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) 
 
 const Home = () => {
   const [activities, setActivities] = useState([]);
-  const [machines, setMachines] = useState({
-    shop: {
-      id: 'shop',
-      name: 'Shop',
-      items: [],
-    },
-    maker: {
-      id: 'maker',
-      name: 'Maker',
-      items: [],
-    },
-    fiber: {
-      id: 'fiber',
-      name: 'Fiber',
-      items: [],
-    },
-  });
-
+  const [machines, setMachines] = useState({});
+  const [familiaSeleccionada, setFamiliaSeleccionada] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [duplicateActivity, setDuplicateActivity] = useState(null);
 
-  // Hacer la solicitud a la API cuando se monte el componente
+  // Familias para el select
+  const familias = ['Router', 'Láser Co2', 'Láser Fibra Óptica', 'Plasma', 'Dobladora', 'Grua Neumática', 'Externa'];
+
+  // Hacer la solicitud a la API cuando se seleccione una familia
+  useEffect(() => {
+    if (familiaSeleccionada) {
+      const fetchMachines = async () => {
+        try {
+          const response = await fetch(`https://teknia.app/api/actividades_tecnicas/maquinas/${familiaSeleccionada}`);
+          const data = await response.json();
+
+          // Mostrar los nombres de las máquinas en la consola
+          data.forEach((machine) => {
+            console.log(machine.maquina);
+          });
+
+          // Asegúrate de que las máquinas obtenidas tengan una estructura válida
+          const updatedMachines = data.reduce((acc, machine) => {
+            acc[machine.maquina] = { name: machine.maquina, items: [] };
+            return acc;
+          }, {});
+
+          setMachines(updatedMachines);
+        } catch (error) {
+          console.error('Error al obtener las máquinas:', error);
+        }
+      };
+
+      fetchMachines();
+    }
+  }, [familiaSeleccionada]);
+
+  // Hacer la solicitud a la API para obtener actividades
   useEffect(() => {
     const fetchActivities = async () => {
       try {
@@ -148,14 +166,14 @@ const Home = () => {
     const activity = originId === 'activities' ? activities[index] : machines[originId].items[index];
 
     // Verificar si la actividad ya existe en la máquina de destino
-    const activityAlreadyExists = machines[destinationId].items.some((item) => item.id === activity.id);
+    const activityAlreadyExists = machines[destinationId]?.items.some((item) => item.id === activity.id);
 
     if (!activityAlreadyExists) {
       setMachines((prev) => ({
         ...prev,
         [destinationId]: {
           ...prev[destinationId],
-          items: [...prev[destinationId].items, activity],
+          items: [...(prev[destinationId]?.items || []), activity],
         },
       }));
     } else {
@@ -166,7 +184,6 @@ const Home = () => {
   };
 
   const removeActivity = (index, originId) => {
-    // Regresar la actividad a la lista de actividades si está en una máquina
     if (originId !== 'activities') {
       const activity = machines[originId].items[index];
       setMachines((prev) => ({
@@ -180,7 +197,7 @@ const Home = () => {
   };
 
   const handleSave = (machineId) => {
-    console.log(`Actividades guardadas para ${machines[machineId].name}:`, machines[machineId].items);
+    console.log(`Actividades guardadas para ${machines[machineId]?.name}:`, machines[machineId]?.items);
   };
 
   const handleCloseModal = () => {
@@ -208,18 +225,39 @@ const Home = () => {
           </div>
         </div>
 
+        {/* Tarjetas de máquinas */}
         <div style={{ display: 'flex', justifyContent: 'space-around', width: '65%' }}>
-          {Object.values(machines).map((machine) => (
-            <MachineDropZone
-              key={machine.id}
-              machine={machine}
-              moveActivity={moveActivity}
-              handleSave={handleSave}
-              removeActivity={removeActivity}
-            />
-          ))}
+          {Object.values(machines).length > 0 ? (
+            Object.values(machines).map((machine) => (
+              <MachineDropZone
+                key={machine.name}
+                machine={machine}
+                moveActivity={moveActivity}
+                handleSave={handleSave}
+                removeActivity={removeActivity}
+              />
+            ))
+          ) : (
+            <p>No hay máquinas para la familia seleccionada</p>
+          )}
         </div>
       </div>
+
+      {/* Selector de familia */}
+      <FormControl fullWidth style={{ marginBottom: '20px' }}>
+        <InputLabel>Selecciona una familia</InputLabel>
+        <Select
+          value={familiaSeleccionada}
+          onChange={(e) => setFamiliaSeleccionada(e.target.value)}
+          label="Selecciona una familia"
+        >
+          {familias.map((familia) => (
+            <MenuItem key={familia} value={familia}>
+              {familia}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
 
       <Dialog
         open={modalOpen}
