@@ -211,7 +211,16 @@ const Home = () => {
         {/* Lista de actividades */}
         <div style={{ width: '30%', padding: '10px', border: '1px solid #ddd', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', backgroundColor: '#fff' }}>
           <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>Actividades</h3>
-          <div style={{ minHeight: '300px', backgroundColor: '#f9f9f9', padding: '10px', borderRadius: '10px' }}>
+          <div
+            style={{
+              minHeight: '300px',
+              maxHeight: '500px',  // Limita la altura máxima del contenedor de actividades
+              overflowY: 'auto',   // Activa el scroll vertical si es necesario
+              backgroundColor: '#f9f9f9',
+              padding: '10px',
+              borderRadius: '10px',
+            }}
+          >
             {activities.map((activity, index) => (
               <Activity
                 key={activity.id}
@@ -224,7 +233,7 @@ const Home = () => {
             ))}
           </div>
         </div>
-
+  
         {/* Tarjetas de máquinas */}
         <div style={{ display: 'flex', justifyContent: 'space-around', width: '65%' }}>
           {Object.values(machines).length > 0 ? (
@@ -242,7 +251,7 @@ const Home = () => {
           )}
         </div>
       </div>
-
+  
       {/* Selector de familia */}
       <FormControl fullWidth style={{ marginBottom: '20px' }}>
         <InputLabel>Selecciona una familia</InputLabel>
@@ -258,7 +267,8 @@ const Home = () => {
           ))}
         </Select>
       </FormControl>
-
+  
+      {/* Modal de actividades duplicadas */}
       <Dialog
         open={modalOpen}
         onClose={handleCloseModal}
@@ -279,6 +289,7 @@ const Home = () => {
       </Dialog>
     </DndProvider>
   );
+  
 };
 
 export default Home;
