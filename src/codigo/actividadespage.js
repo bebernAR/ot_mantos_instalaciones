@@ -47,6 +47,7 @@ function ActivityPage() {
       await axios.post(`${API_URL}/crear_actividad_mantto`, data);
       fetchActividades();
       setNewActividad({ codigo: '', titulo: '', objetivo: '' });
+      setClasificacion("");
     } catch (error) {
       console.error('Error adding Actividad:', error);
     }
@@ -63,6 +64,7 @@ function ActivityPage() {
       fetchActividades();
       setDialogOpen(false);
       setEditActividad(null);
+      setClasification("");
     } catch (error) {
       console.error('Error editing Actividad:', error);
     }
