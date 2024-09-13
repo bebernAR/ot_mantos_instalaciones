@@ -22,7 +22,7 @@ function App() {
 
           {/* Título de la aplicación */}
           <Typography variant="h6" style={{ flexGrow: 1 }}>
-            MANTOS Y REPARACIONES
+            INSTALACIONES, MANTOS Y REPARACIONES
           </Typography>
 
           {/* Enlaces de navegación */}

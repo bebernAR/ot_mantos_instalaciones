@@ -5,8 +5,26 @@ import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import { NextArrow, PrevArrow } from './flechas';
+import { Build, Visibility, Done, CleaningServices, SwapHoriz } from '@mui/icons-material'; 
 
 const ItemType = 'ACTIVITY';
+
+const getIconByClassification = (classification) => {
+  switch (classification.trim()) { // Usa trim para eliminar espacios en blanco si los hubiera
+    case 'Inspección':
+      return <Visibility style={{ marginLeft: '10%', color: 'black', justifyItems:'flex-end'}} />; // Ícono de inspección
+    case 'Limpieza':
+      return <CleaningServices style={{ marginLeft: '10%', color: 'black' }} />; // Ícono de limpieza
+    case 'Ajuste':
+      return <SwapHoriz style={{ marginRight: '8px', color: 'black' }} />; // Ícono de ajuste
+    case 'Remplazo Definitivo':
+      return <Build style={{ marginRight: '8px', color: 'black' }} />; // Ícono de reemplazo definitivo
+    default:
+      return <Done style={{ marginRight: '8px', color: '#9e9e9e' }} />; // Ícono por defecto
+  }
+};
+
 
 const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => {
   const [{ isDragging }, dragRef] = useDrag({
@@ -32,9 +50,14 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => 
         cursor: 'grab',
         fontFamily: 'Arial, sans-serif',
         fontSize: '14px',
+        display: 'flex', // Flexbox para alinear los elementos
+        justifyContent: 'space-between', // Alinea los elementos en los extremos (texto a la izquierda y icono a la derecha)
+        alignItems: 'center', // Asegura que estén alineados verticalmente
       }}
     >
+      <strong>{activity.codigo + " - "}</strong>
       {activity.titulo}
+      {getIconByClassification(activity.clasificacion)}
       {origin !== 'activities' && (
         <span
           onClick={() => removeActivity(index, origin)}
@@ -75,6 +98,7 @@ const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) 
         border: '1px solid #ddd',
         borderRadius: '10px',
         marginBottom: '20px',
+      
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
         transition: 'background-color 0.3s ease',
         textAlign: 'center',
@@ -82,7 +106,7 @@ const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) 
     >
       <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>{machine.name}</h3>
 
-      {/* Contenedor de actividades con un límite de altura y scroll */}
+    
       <div
         style={{
           maxHeight: '200px', // Limita la altura máxima a 200px (ajusta según prefieras)
@@ -130,7 +154,7 @@ const Home = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [duplicateActivity, setDuplicateActivity] = useState(null);
 
-  // Familias para el select
+
   const familias = ['Router', 'Láser Co2', 'Láser Fibra Óptica', 'Plasma', 'Dobladora', 'Grua Neumática', 'Externa'];
 
   // Hacer la solicitud a la API cuando se seleccione una familia
@@ -255,6 +279,8 @@ const Home = () => {
     slidesToShow: 3,
     slidesToScroll: 1,
     arrows: true,
+    prevArrow: <PrevArrow/>,
+    nextArrow: <NextArrow/>
   };
 
   return (
@@ -263,6 +289,7 @@ const Home = () => {
         {/* Lista de actividades */}
         <div style={{ width: '30%', padding: '10px', border: '1px solid #ddd', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', backgroundColor: '#fff' }}>
           <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>Actividades</h3>
+          <button></button> {/* BOTON PARA DESPLEGAR ACORDEÓN DE ICONOS*/}
           <div
             style={{
               minHeight: '300px',

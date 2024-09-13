@@ -36,3 +36,12 @@
     transform: rotate(360deg);
   }
 }
+.slick-prev, .slick-next {
+  color: red; /* Cambia este valor al color que desees */
+  font-size: 0px; /* Opcional: cambiar el tamaño de las flechas */
+  z-index: 1; /* Asegura que las flechas estén sobre el contenido */
+}
+
+.slick-prev:hover, .slick-next:hover {
+  color: blue; /* Cambia el color de las flechas cuando pases el ratón */
+}
