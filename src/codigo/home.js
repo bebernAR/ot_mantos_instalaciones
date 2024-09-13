@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
+import Slider from "react-slick";
+import "slick-carousel/slick/slick.css";
+import "slick-carousel/slick/slick-theme.css";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 
 const ItemType = 'ACTIVITY';
@@ -78,16 +81,27 @@ const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) 
       }}
     >
       <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>{machine.name}</h3>
-      {items.map((item, index) => (
-        <Activity
-          key={item.id}
-          activity={item}
-          index={index}
-          moveActivity={moveActivity}
-          origin={machine.name}
-          removeActivity={removeActivity}
-        />
-      ))}
+
+      {/* Contenedor de actividades con un límite de altura y scroll */}
+      <div
+        style={{
+          maxHeight: '200px', // Limita la altura máxima a 200px (ajusta según prefieras)
+          overflowY: 'auto',  // Habilita el scroll vertical si se excede la altura
+          paddingRight: '10px',  // Añade un pequeño padding para evitar que el scroll tape el contenido
+        }}
+      >
+        {items.map((item, index) => (
+          <Activity
+            key={item.id}
+            activity={item}
+            index={index}
+            moveActivity={moveActivity}
+            origin={machine.name}
+            removeActivity={removeActivity}
+          />
+        ))}
+      </div>
+
       <Button
         variant="contained"
         color="primary"
@@ -108,6 +122,7 @@ const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) 
   );
 };
 
+
 const Home = () => {
   const [activities, setActivities] = useState([]);
   const [machines, setMachines] = useState({});
@@ -126,12 +141,10 @@ const Home = () => {
           const response = await fetch(`https://teknia.app/api/actividades_tecnicas/maquinas/${familiaSeleccionada}`);
           const data = await response.json();
 
-          // Mostrar los nombres de las máquinas en la consola
           data.forEach((machine) => {
             console.log(machine.maquina);
           });
 
-          // Asegúrate de que las máquinas obtenidas tengan una estructura válida
           const updatedMachines = data.reduce((acc, machine) => {
             acc[machine.maquina] = { name: machine.maquina, items: [] };
             return acc;
@@ -153,7 +166,7 @@ const Home = () => {
       try {
         const response = await fetch('https://teknia.app/api3/obtener_actividades_mantto');
         const data = await response.json();
-        setActivities(data); // Establecer las actividades obtenidas de la API en el estado
+        setActivities(data);
       } catch (error) {
         console.error('Error al obtener las actividades:', error);
       }
@@ -165,7 +178,6 @@ const Home = () => {
   const moveActivity = (index, destinationId, originId) => {
     const activity = originId === 'activities' ? activities[index] : machines[originId].items[index];
 
-    // Verificar si la actividad ya existe en la máquina de destino
     const activityAlreadyExists = machines[destinationId]?.items.some((item) => item.id === activity.id);
 
     if (!activityAlreadyExists) {
@@ -177,7 +189,6 @@ const Home = () => {
         },
       }));
     } else {
-      // Mostrar el modal si la actividad ya está agregada
       setDuplicateActivity(activity);
       setModalOpen(true);
     }
@@ -185,7 +196,6 @@ const Home = () => {
 
   const removeActivity = (index, originId) => {
     if (originId !== 'activities') {
-      const activity = machines[originId].items[index];
       setMachines((prev) => ({
         ...prev,
         [originId]: {
@@ -196,13 +206,55 @@ const Home = () => {
     }
   };
 
-  const handleSave = (machineId) => {
-    console.log(`Actividades guardadas para ${machines[machineId]?.name}:`, machines[machineId]?.items);
+  const handleSave = async (machineId) => {
+    const machine = machines[machineId];
+    if (!machine || !machine.items || machine.items.length === 0) {
+      console.log("No hay actividades para guardar.");
+      return;
+    }
+
+    const payload = {
+      familia: familiaSeleccionada,
+      equipo: machine.name,
+      actividades: machine.items.map((item) => ({
+        actividad: item.titulo,
+        id_actividad: item.id,
+      })),
+    };
+
+    try {
+      const response = await fetch('https://teknia.app/api3/crear_equipo_mantto', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Datos guardados con éxito:', result);
+      } else {
+        console.error('Error al guardar los datos:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error al hacer la solicitud a la API:', error);
+    }
   };
 
   const handleCloseModal = () => {
     setModalOpen(false);
     setDuplicateActivity(null);
+  };
+
+  // Configuración del carrusel
+  const settings = {
+    dots: true,
+    infinite: false,
+    speed: 500,
+    slidesToShow: 3,
+    slidesToScroll: 1,
+    arrows: true,
   };
 
   return (
@@ -214,8 +266,8 @@ const Home = () => {
           <div
             style={{
               minHeight: '300px',
-              maxHeight: '500px',  // Limita la altura máxima del contenedor de actividades
-              overflowY: 'auto',   // Activa el scroll vertical si es necesario
+              maxHeight: '500px',
+              overflowY: 'auto',
               backgroundColor: '#f9f9f9',
               padding: '10px',
               borderRadius: '10px',
@@ -233,25 +285,28 @@ const Home = () => {
             ))}
           </div>
         </div>
-  
-        {/* Tarjetas de máquinas */}
-        <div style={{ display: 'flex', justifyContent: 'space-around', width: '65%' }}>
-          {Object.values(machines).length > 0 ? (
-            Object.values(machines).map((machine) => (
-              <MachineDropZone
-                key={machine.name}
-                machine={machine}
-                moveActivity={moveActivity}
-                handleSave={handleSave}
-                removeActivity={removeActivity}
-              />
-            ))
-          ) : (
-            <p>No hay máquinas para la familia seleccionada</p>
-          )}
+
+        {/* Carrusel de máquinas */}
+        <div style={{ width: '65%' }}>
+          <Slider {...settings}>
+            {Object.values(machines).length > 0 ? (
+              Object.values(machines).map((machine) => (
+                <div key={machine.name}>
+                  <MachineDropZone
+                    machine={machine}
+                    moveActivity={moveActivity}
+                    handleSave={handleSave}
+                    removeActivity={removeActivity}
+                  />
+                </div>
+              ))
+            ) : (
+              <p>No hay máquinas para la familia seleccionada</p>
+            )}
+          </Slider>
         </div>
       </div>
-  
+
       {/* Selector de familia */}
       <FormControl fullWidth style={{ marginBottom: '20px' }}>
         <InputLabel>Selecciona una familia</InputLabel>
@@ -267,7 +322,7 @@ const Home = () => {
           ))}
         </Select>
       </FormControl>
-  
+
       {/* Modal de actividades duplicadas */}
       <Dialog
         open={modalOpen}
@@ -289,7 +344,6 @@ const Home = () => {
       </Dialog>
     </DndProvider>
   );
-  
 };
 
 export default Home;
