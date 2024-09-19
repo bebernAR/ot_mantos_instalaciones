@@ -16,7 +16,7 @@ const ItemType = 'ACTIVITY';
 const getIconByClassification = (classification) => {
   switch (classification.trim()) {
     case 'Inspección':
-      return <Visibility style={{ marginRight: '2px', color: 'black' }} />;
+      return <Visibility style={{ marginRight: '2px', color: '#246eb8' }} />;
     case 'Limpieza':
       return <CleaningServices style={{ marginRight: '2px', color: '#0e6f27' }} />;
     case 'Ajuste':
