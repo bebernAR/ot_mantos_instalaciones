@@ -45,3 +45,12 @@
 .slick-prev:hover, .slick-next:hover {
   color: blue; /* Cambia el color de las flechas cuando pases el ratón */
 }
+
+.link-appbar{
+  border-bottom: 2px solid black;
+  transition: border-bottom 0.5s;
+}
+
+.link-appbar:hover{
+  border-bottom: #61dafb;
+}

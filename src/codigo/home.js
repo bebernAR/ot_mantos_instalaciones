@@ -341,7 +341,7 @@ const Home = () => {
           <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>Actividades</h3>
          
           <div>
-          <Button variant="" startIcon={<FontAwesomeIcon icon={faInfoCircle} onClick={handleOpen} />}>    </Button> 
+          <Button variant="" startIcon={<FontAwesomeIcon icon={faInfoCircle} onClick={handleOpen} style={{cursor:'zoom-in'}} />}>    </Button> 
           <Modal
             open={open}
             onClose={handleClose}

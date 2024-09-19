@@ -10,6 +10,7 @@ import { BrowserRouter as Router, Route, Routes, Link as RouterLink } from 'reac
 import Home from './codigo/home';
 import ActivityPage from './codigo/actividadespage';
 import Equipos from './codigo/equipos';
+import Tecnicos from './codigo/tecnicos';
 
 function App() {
   return (
@@ -26,14 +27,17 @@ function App() {
           </Typography>
 
           {/* Enlaces de navegación */}
-          <Link component={RouterLink} to="/" color="inherit" style={{ marginRight: '20px', textDecoration: "none" }}>
+          <Link component={RouterLink} to="/" color="inherit" style={{ marginRight: '20px', textDecoration: "none" }}className='link-appbar'>
             INICIO
           </Link>
-          <Link component={RouterLink} to="/activities" color="inherit" style={{ marginRight: '20px', textDecoration: "none" }}>
+          <Link component={RouterLink} to="/activities" color="inherit" style={{ marginRight: '20px', textDecoration: "none" }}className='link-appbar'>
             ACTIVIDADES
           </Link>
-          <Link component={RouterLink} to="/equipos" color="inherit" style={{ textDecoration: "none" }}>
+          <Link component={RouterLink} to="/equipos" color="inherit" style={{marginRight: '20px', textDecoration: "none" }}className='link-appbar'>
             EQUIPOS
+          </Link>
+          <Link component={RouterLink} to="/tecnico" color="inherit" style={{marginRight: '20px', textDecoration: "none" }} className='link-appbar'>
+            ASIGNAR A TECNICO
           </Link>
         </Toolbar>
       </AppBar>
@@ -43,6 +47,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/activities" element={<ActivityPage />} />
         <Route path="/equipos" element={<Equipos />} />
+        <Route path="/tecnico" element={<Tecnicos />} />
       </Routes>
     </Router>
   );
