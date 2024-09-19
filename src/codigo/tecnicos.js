@@ -3,6 +3,7 @@ import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Button, MenuItem, Select, FormControl, InputLabel, Typography, Box } from '@mui/material';
 import { Build, Visibility, Done, CleaningServices, SwapHoriz, EngineeringOutlined } from '@mui/icons-material'; 
+import { useTheme } from '@mui/material/styles'; // Importar useTheme para acceder al tema actual
 
 const ItemType = 'ACTIVITY';
 
@@ -10,22 +11,23 @@ const ItemType = 'ACTIVITY';
 const getIconByClassification = (classification) => {
   switch (classification.trim()) {
     case 'Inspección':
-      return <Visibility style={{ marginRight: '2px', color: 'black' }} />;
+      return <Visibility style={{ marginRight: '8px', color: '#1976d2' }} />;
     case 'Limpieza':
-      return <CleaningServices style={{ marginRight: '2px', color: '#0e6f27' }} />;
+      return <CleaningServices style={{ marginRight: '8px', color: '#43a047' }} />;
     case 'Ajuste':
-      return <SwapHoriz style={{ marginRight: '2px', color: '#73732b' }} />;
+      return <SwapHoriz style={{ marginRight: '8px', color: '#ffb300' }} />;
     case 'Remplazo Definitivo':
-      return <Build style={{ marginRight: '2px', color: 'grey' }} />;
+      return <Build style={{ marginRight: '8px', color: '#757575' }} />;
     case 'Instalación':
-      return <EngineeringOutlined style={{ marginRight: '2px', color: 'grey'}} />;
+      return <EngineeringOutlined style={{ marginRight: '8px', color: '#ef6c00' }} />;
     default:
-      return <Done style={{ marginRight: '2px', color: '#9e9e9e' }} />;
+      return <Done style={{ marginRight: '8px', color: '#9e9e9e' }} />;
   }
 };
 
 // Componente de actividad arrastrable
 const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => {
+  const theme = useTheme(); // Accede al tema actual
   const [{ isDragging }, dragRef] = useDrag({
     type: ItemType,
     item: { index, origin },
@@ -38,27 +40,29 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => 
     <div
       ref={dragRef}
       style={{
-        padding: '15px',
-        margin: '8px 0',
-        backgroundColor: isDragging ? '#f0f0f0' : '#fff',
+        padding: '10px',
+        margin: '12px 0',
+        backgroundColor: isDragging ? (theme.palette.mode === 'dark' ? '#424242' : '#f0f0f0') : (theme.palette.mode === 'dark' ? '#1c1c1c' : '#ffffff'),
         border: '1px solid #ddd',
         borderRadius: '8px',
-        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+        overflowY: 'auto',
+        boxShadow: '0 4px 8px rgba(0,0,0,0.3)',
         cursor: 'grab',
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
+        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', // Ajuste del color del texto según el tema
       }}
     >
       {getIconByClassification(activity.clasificacion)}
       <strong>{activity.titulo}</strong>
-    
     </div>
   );
 };
 
 // Zona de caída de técnicos
 const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
+  const theme = useTheme(); // Accede al tema actual
   const [{ isOver }, dropRef] = useDrop({
     accept: ItemType,
     drop: (item) => moveActivity(item.index, tecnico.id, item.origin),
@@ -72,15 +76,36 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
       ref={dropRef}
       style={{
         padding: '20px',
-        backgroundColor: isOver ? '#e3f2fd' : '#f9f9f9',
+        backgroundColor: isOver ? (theme.palette.mode === 'dark' ? '#37474f' : '#e3f2fd') : (theme.palette.mode === 'dark' ? '#424242' : '#ffffff'),
         minHeight: '300px',
         border: '1px solid #ddd',
         borderRadius: '10px',
         marginBottom: '20px',
+        overflowY: 'auto',
         textAlign: 'center',
+        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', // Ajuste del color del texto
       }}
     >
-      <h3>{tecnico.nombre_tecnico}</h3>
+      <Typography variant="h5" component="h3" style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', marginBottom: '20px' }}>
+        {tecnico.nombre_tecnico}
+      </Typography>
+      <Button
+        variant="contained"
+        color="primary"
+        style={{
+          marginTop: '20px',
+          backgroundColor: theme.palette.mode === 'dark' ? '#1976d2' : '#007bff',
+          color: '#fff',
+          borderRadius: '20px',
+          padding: '10px 20px',
+          textTransform: 'none',
+          boxShadow: '0 4px 8px rgba(25, 118, 210, 0.4)',
+        }}
+        onClick={() => (null)}
+      >
+        Guardar
+      </Button>
+
       {tecnico.items && tecnico.items.map((item, index) => (
         <Activity
           key={item.id}
@@ -100,7 +125,9 @@ const Tecnicos = () => {
   const [activities, setActivities] = useState([]);  // Actividades obtenidas de la API
   const [tecnicos, setTecnicos] = useState([]);  // Técnicos obtenidos de la API
   const [selectedTecnico, setSelectedTecnico] = useState('');  // Técnico seleccionado
-  const [tecnicoAsignado, setTecnicoAsignado] = useState(null);  // Técnico asignado con actividades
+  const [tecnicoAsignado, setTecnicoAsignado] = useState(null);
+  
+  const theme = useTheme();  // Técnico asignado con actividades
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -163,6 +190,7 @@ const Tecnicos = () => {
               value={selectedTecnico}
               onChange={handleTecnicoChange}
               label="Técnico"
+              style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }} // Cambia el color del texto en el selector
             >
               {tecnicos.map((tecnico) => (
                 <MenuItem key={tecnico.id} value={tecnico.id}>
@@ -171,8 +199,9 @@ const Tecnicos = () => {
               ))}
             </Select>
           </FormControl>
-          <div style={{ marginTop: '20px', border: '1px solid #ddd', borderRadius: '10px', padding: '10px' }}>
-            <h3>Actividades</h3>
+          <div style={{ marginTop: '20px', border: '1px solid #ddd', borderRadius: '10px', padding: '10px', backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#ffffff' }}>
+            <h3 style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Actividades</h3>
+            
             {activities.map((activity, index) => (
               <Activity
                 key={activity.id}
@@ -182,6 +211,7 @@ const Tecnicos = () => {
                 origin="activities"
               />
             ))}
+
           </div>
         </div>
 

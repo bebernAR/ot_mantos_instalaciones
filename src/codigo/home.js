@@ -4,34 +4,34 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import { Button, Modal, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import { Button, Modal, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, MenuItem, Select, FormControl, InputLabel, Typography, Box } from '@mui/material';
 import { NextArrow, PrevArrow } from './flechas';
 import { Build, Visibility, Done, CleaningServices, SwapHoriz, EngineeringOutlined } from '@mui/icons-material'; 
-import { faInfoCircle } from '@fortawesome/free-solid-svg-icons'; //
+import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import Typography from '@mui/material/Typography';
-import Box from '@mui/material/Box';
+import { useTheme } from '@mui/material/styles';
+
 const ItemType = 'ACTIVITY';
 
 const getIconByClassification = (classification) => {
-  switch (classification.trim()) { // Usa trim para eliminar espacios en blanco si los hubiera
+  switch (classification.trim()) {
     case 'Inspección':
-      return <Visibility style={{ marginRight: '2px', color: 'black', justifyItems:'flex-end'}} />; // Ícono de inspección
+      return <Visibility style={{ marginRight: '2px', color: 'black' }} />;
     case 'Limpieza':
-      return <CleaningServices style={{ marginRight: '2px', color: '#0e6f27' }} />; // Ícono de limpieza
+      return <CleaningServices style={{ marginRight: '2px', color: '#0e6f27' }} />;
     case 'Ajuste':
-      return <SwapHoriz style={{ marginRight: '2px', color: '#73732b' }} />; // Ícono de ajuste
+      return <Build style={{ marginRight: '2px', color: 'grey' }} />;
     case 'Remplazo Definitivo':
-      return <Build style={{ marginRight: '2px', color: 'grey' }} />; // Ícono de reemplazo definitivo
+      return <SwapHoriz style={{ marginRight: '2px', color: '#73732b' }} />;
     case 'Instalación':
-      return <EngineeringOutlined style={{ marginRight: '2px', color: 'grey'}} />
+      return <EngineeringOutlined style={{ marginRight: '2px', color: 'black'}} />;
     default:
-      return <Done style={{ marginRight: '2px', color: '#9e9e9e' }} />; // Ícono por defecto
+      return <Done style={{ marginRight: '2px', color: 'black' }} />;
   }
 };
 
-
 const Activity = ({ activity, index, moveActivity, origin, removeActivity, moveItemWithinMachine }) => {
+  const theme = useTheme(); // Obtén el tema actual (oscuro o claro)
   const [{ isDragging }, dragRef] = useDrag({
     type: ItemType,
     item: { index, origin },
@@ -56,7 +56,8 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, moveI
       style={{
         padding: '15px',
         margin: '8px 0',
-        backgroundColor: isDragging ? '#f0f0f0' : '#fff',
+        backgroundColor: isDragging ? '#f0f0f0' : theme.palette.mode === 'dark' ? '#333' : '#fff',
+        color: theme.palette.mode === 'dark' ? '#fff' : '#000',  // Cambia el color del texto según el tema
         border: '1px solid #ddd',
         borderRadius: '8px',
         boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
@@ -92,117 +93,94 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, moveI
   );
 };
 
+const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) => {
+  const theme = useTheme();
+  const [{ isOver }, dropRef] = useDrop({
+    accept: ItemType,
+    drop: (item) => moveActivity(item.index, machine.name, item.origin),
+    collect: (monitor) => ({
+      isOver: monitor.isOver(),
+    }),
+  });
 
+  return (
+    <div
+      ref={dropRef}
+      style={{
+        padding: '20px',
+        backgroundColor: isOver ? '#e3f2fd' : theme.palette.mode === 'dark' ? '#424242' : '#f9f9f9',
+        minHeight: '300px',
+        border: '1px solid #ddd',
+        borderRadius: '10px',
+        marginBottom: '20px',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+        transition: 'background-color 0.3s ease',
+        textAlign: 'center',
+        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', // Ajuste del color del texto
+      }}
+    >
+      <Typography variant="h5" style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
+        {machine.name}
+      </Typography>
 
+      <div
+        style={{
+          maxHeight: '200px',
+          overflowY: 'auto',
+          paddingRight: '10px',
+        }}
+      >
+        {machine.items.map((item, index) => (
+          <Activity
+            key={item.id}
+            activity={item}
+            index={index}
+            moveActivity={moveActivity}
+            moveItemWithinMachine={() => {}}
+            origin={machine.name}
+            removeActivity={removeActivity}
+          />
+        ))}
+      </div>
 
+      <Button
+        variant="contained"
+        color="primary"
+        style={{
+          marginTop: '20px',
+          backgroundColor: '#007bff',
+          color: '#fff',
+          borderRadius: '20px',
+          padding: '10px 20px',
+          textTransform: 'none',
+          boxShadow: '0 4px 8px rgba(0, 123, 255, 0.3)',
+        }}
+        onClick={() => handleSave(machine.name)}
+      >
+        Guardar
+      </Button>
+    </div>
+  );
+};
 
 const Home = () => {
+  const theme = useTheme(); // Obtén el tema actual (oscuro o claro)
   const [activities, setActivities] = useState([]);
   const [machines, setMachines] = useState({});
   const [familiaSeleccionada, setFamiliaSeleccionada] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [duplicateActivity, setDuplicateActivity] = useState(null);
-  const [open, setOpen] = React.useState(false);
+  const [open, setOpen] = useState(false);
+
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-  const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) => {
-    const [{ isOver }, dropRef] = useDrop({
-      accept: ItemType,
-      drop: (item) => moveActivity(item.index, machine.name, item.origin),
-      collect: (monitor) => ({
-        isOver: monitor.isOver(),
-      }),
-    });
-  
-    // Función para mover actividades dentro de la misma máquina
-    const moveItemWithinMachine = (fromIndex, toIndex, origin) => {
-      setMachines((prev) => {
-        const updatedItems = [...prev[origin].items];
-        const [movedItem] = updatedItems.splice(fromIndex, 1);
-        updatedItems.splice(toIndex, 0, movedItem);
-  
-        return {
-          ...prev,
-          [origin]: {
-            ...prev[origin],
-            items: updatedItems,
-          },
-        };
-      });
-    };
-  
-    const items = machine.items || [];
-  
-    return (
-      <div
-        ref={dropRef}
-        style={{
-          padding: '20px',
-          backgroundColor: isOver ? '#e3f2fd' : '#f9f9f9',
-          minHeight: '300px',
-          border: '1px solid #ddd',
-          borderRadius: '10px',
-          marginBottom: '20px',
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-          transition: 'background-color 0.3s ease',
-          textAlign: 'center',
-        }}
-      >
-        <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>{machine.name}</h3>
-  
-        <div
-          style={{
-            maxHeight: '200px', 
-            overflowY: 'auto',  
-            paddingRight: '10px',
-          }}
-        >
-          {items.map((item, index) => (
-            <Activity
-              key={item.id}
-              activity={item}
-              index={index}
-              moveActivity={moveActivity}
-              moveItemWithinMachine={moveItemWithinMachine} // Pasar la función de reordenar
-              origin={machine.name}
-              removeActivity={removeActivity}
-            />
-          ))}
-        </div>
-  
-        <Button
-          variant="contained"
-          color="primary"
-          style={{
-            marginTop: '20px',
-            backgroundColor: '#007bff',
-            color: '#fff',
-            borderRadius: '20px',
-            padding: '10px 20px',
-            textTransform: 'none',
-            boxShadow: '0 4px 8px rgba(0, 123, 255, 0.3)',
-          }}
-          onClick={() => handleSave(machine.name)}
-        >
-          Guardar
-        </Button>
-      </div>
-    );
-  };
 
-  const familias = ['Router', 'Láser Co2', 'Láser Fibra Óptica', 'Plasma', 'Dobladora', 'Grua Neumática', 'Externa'];
-
-  // Hacer la solicitud a la API cuando se seleccione una familia
   useEffect(() => {
     if (familiaSeleccionada) {
       const fetchMachines = async () => {
         try {
           const response = await fetch(`https://teknia.app/api/actividades_tecnicas/maquinas/${familiaSeleccionada}`);
           const data = await response.json();
-
-          data.forEach((machine) => {
-            console.log(machine.maquina);
-          });
 
           const updatedMachines = data.reduce((acc, machine) => {
             acc[machine.maquina] = { name: machine.maquina, items: [] };
@@ -219,7 +197,6 @@ const Home = () => {
     }
   }, [familiaSeleccionada]);
 
-  // Hacer la solicitud a la API para obtener actividades
   useEffect(() => {
     const fetchActivities = async () => {
       try {
@@ -236,7 +213,6 @@ const Home = () => {
 
   const moveActivity = (index, destinationId, originId) => {
     const activity = originId === 'activities' ? activities[index] : machines[originId].items[index];
-
     const activityAlreadyExists = machines[destinationId]?.items.some((item) => item.id === activity.id);
 
     if (!activityAlreadyExists) {
@@ -306,7 +282,6 @@ const Home = () => {
     setDuplicateActivity(null);
   };
 
-  // Configuración del carrusel
   const settings = {
     dots: true,
     infinite: false,
@@ -314,9 +289,10 @@ const Home = () => {
     slidesToShow: 3,
     slidesToScroll: 1,
     arrows: true,
-    prevArrow: <PrevArrow/>,
-    nextArrow: <NextArrow/>
+    prevArrow: <PrevArrow />,
+    nextArrow: <NextArrow />
   };
+
   const style = {
     position: 'absolute',
     top: '50%',
@@ -333,43 +309,42 @@ const Home = () => {
   const uniqueClassifications = Array.from(new Set(activities.map(activity => activity.clasificacion.trim())));
 
   return (
-    
     <DndProvider backend={HTML5Backend}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px', backgroundColor: '#f4f6f9' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px', backgroundColor: theme.palette.mode === 'dark' ? '#1c1c1c' : '#f4f6f9' }}>
         {/* Lista de actividades */}
-        <div style={{ width: '30%', padding: '10px', border: '1px solid #ddd', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', backgroundColor: '#fff' }}>
-          <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>Actividades</h3>
-         
+        <div style={{ width: '30%', padding: '10px', border: `1px solid ${theme.palette.mode === 'dark' ? '#444' : '#ddd'}`, borderRadius: '10px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', backgroundColor: theme.palette.mode === 'dark' ? '#333' : '#fff' }}>
+          <h3 style={{ fontFamily: 'Arial, sans-serif', color: theme.palette.mode === 'dark' ? '#fff' : '#000' }}>Actividades</h3>
+
           <div>
-          <Button variant="" startIcon={<FontAwesomeIcon icon={faInfoCircle} onClick={handleOpen} style={{cursor:'zoom-in'}} />}>    </Button> 
-          <Modal
-            open={open}
-            onClose={handleClose}
-            aria-labelledby="modal-modal-title"
-            aria-describedby="modal-modal-description"
-          >
-          <Box sx={style}>
-            <Typography id="modal-modal-title" variant="h6" component="h2">
-              Guía de Iconos
-            </Typography>
-            <Typography id="modal-modal-description" sx={{ mt: 2 }}>
-              {/* Iterar sobre las clasificaciones únicas y mostrar el icono y la clasificación */}
-              {uniqueClassifications.map((classification, index) => (
-                <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
-                  {getIconByClassification(classification)} 
-                  <strong> <span style={{ marginLeft: '8px', fontSize: '16px' }}>{classification}</span></strong>
-                </div>
-              ))}
-            </Typography>
-          </Box>
-        </Modal>
-      </div>
+            <Button startIcon={<FontAwesomeIcon icon={faInfoCircle} />} onClick={handleOpen} style={{cursor: 'help'}}>Guía de Iconos</Button>
+            <Modal
+              open={open}
+              onClose={handleClose}
+              aria-labelledby="modal-modal-title"
+              aria-describedby="modal-modal-description"
+            >
+              <Box sx={style}>
+                <Typography id="modal-modal-title" variant="h6" component="h2">
+                  Guía de Iconos
+                </Typography>
+                <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+                  {uniqueClassifications.map((classification, index) => (
+                    <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                      {getIconByClassification(classification)}
+                      <strong><span style={{ marginLeft: '8px', fontSize: '16px' }}>{classification}</span></strong>
+                    </div>
+                  ))}
+                </Typography>
+              </Box>
+            </Modal>
+          </div>
+
           <div
             style={{
               minHeight: '300px',
               maxHeight: '500px',
               overflowY: 'auto',
-              backgroundColor: '#f9f9f9',
+              backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#f9f9f9',
               padding: '10px',
               borderRadius: '10px',
             }}
@@ -392,17 +367,18 @@ const Home = () => {
           <Slider {...settings}>
             {Object.values(machines).length > 0 ? (
               Object.values(machines).map((machine) => (
-                <div key={machine.name}>
-                  <MachineDropZone
-                    machine={machine}
-                    moveActivity={moveActivity}
-                    handleSave={handleSave}
-                    removeActivity={removeActivity}
-                  />
-                </div>
+                <MachineDropZone
+                  key={machine.name}
+                  machine={machine}
+                  moveActivity={moveActivity}
+                  handleSave={handleSave}
+                  removeActivity={removeActivity}
+                />
               ))
             ) : (
-              <p>No hay máquinas para la familia seleccionada</p>
+              <p style={{ color: theme.palette.mode === 'dark' ? '#fff' : '#000' }}>
+                No hay máquinas para la familia seleccionada
+              </p>
             )}
           </Slider>
         </div>
@@ -410,13 +386,14 @@ const Home = () => {
 
       {/* Selector de familia */}
       <FormControl fullWidth style={{ marginBottom: '20px' }}>
-        <InputLabel>Selecciona una familia</InputLabel>
+        <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una familia</InputLabel>
         <Select
           value={familiaSeleccionada}
           onChange={(e) => setFamiliaSeleccionada(e.target.value)}
           label="Selecciona una familia"
+          style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
         >
-          {familias.map((familia) => (
+          {['Router', 'Láser Co2', 'Láser Fibra Óptica', 'Plasma', 'Dobladora', 'Grua Neumática', 'Externa'].map((familia) => (
             <MenuItem key={familia} value={familia}>
               {familia}
             </MenuItem>
@@ -425,20 +402,15 @@ const Home = () => {
       </FormControl>
 
       {/* Modal de actividades duplicadas */}
-      <Dialog
-        open={modalOpen}
-        onClose={handleCloseModal}
-        aria-labelledby="alert-dialog-title"
-        aria-describedby="alert-dialog-description"
-      >
-        <DialogTitle id="alert-dialog-title">{"Actividad duplicada"}</DialogTitle>
+      <Dialog open={modalOpen} onClose={handleCloseModal}>
+        <DialogTitle>{"Actividad duplicada"}</DialogTitle>
         <DialogContent>
-          <DialogContentText id="alert-dialog-description">
+          <DialogContentText>
             La actividad "{duplicateActivity?.titulo}" ya está agregada a la máquina.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal} color="primary" autoFocus>
+          <Button onClick={handleCloseModal} color="primary">
             OK
           </Button>
         </DialogActions>

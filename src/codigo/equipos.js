@@ -43,7 +43,8 @@ const Equipos = () => {
 
     useEffect(() => {
         if (familia) {
-            axios.get(`https://teknia.app/api/actividades_tecnicas/maquinas/${familia}`)
+            axios.get(`
+                `)
                 .then(response => {
                     setMaquinas(response.data.map(machine => machine.maquina));
                 })
