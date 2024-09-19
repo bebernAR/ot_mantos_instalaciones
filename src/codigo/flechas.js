@@ -7,7 +7,7 @@ const PrevArrow = ({ className, style, onClick }) => (
     style={{
       ...style,
       display: 'block',
-      background: 'black', // Cambia este color al que desees
+      background: 'grey', // Cambia este color al que desees
       borderRadius: '50%',
       marginRight: '10px',
       // Opcional: un estilo redondeado
@@ -23,7 +23,7 @@ const NextArrow = ({ className, style, onClick }) => (
     style={{
       ...style,
       display: 'block',
-      background: 'black', // Cambia este color al que desees
+      background: 'grey', // Cambia este color al que desees
       borderRadius: '50%',
       marginRight: '20px',
       // Opcional: un estilo redondeado

@@ -4,11 +4,13 @@ import { HTML5Backend } from 'react-dnd-html5-backend';
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
+import { Button, Modal, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 import { NextArrow, PrevArrow } from './flechas';
 import { Build, Visibility, Done, CleaningServices, SwapHoriz, EngineeringOutlined } from '@mui/icons-material'; 
 import { faInfoCircle } from '@fortawesome/free-solid-svg-icons'; //
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import Typography from '@mui/material/Typography';
+import Box from '@mui/material/Box';
 const ItemType = 'ACTIVITY';
 
 const getIconByClassification = (classification) => {
@@ -156,6 +158,9 @@ const Home = () => {
   const [familiaSeleccionada, setFamiliaSeleccionada] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [duplicateActivity, setDuplicateActivity] = useState(null);
+  const [open, setOpen] = React.useState(false);
+  const handleOpen = () => setOpen(true);
+  const handleClose = () => setOpen(false);
 
 
   const familias = ['Router', 'Láser Co2', 'Láser Fibra Óptica', 'Plasma', 'Dobladora', 'Grua Neumática', 'Externa'];
@@ -285,16 +290,53 @@ const Home = () => {
     prevArrow: <PrevArrow/>,
     nextArrow: <NextArrow/>
   };
+  const style = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: 400,
+    bgcolor: 'background.paper',
+    border: '0px solid #000',
+    borderRadius: '12px',
+    boxShadow: 24,
+    p: 4,
+  };
+
+  const uniqueClassifications = Array.from(new Set(activities.map(activity => activity.clasificacion.trim())));
 
   return (
+    
     <DndProvider backend={HTML5Backend}>
       <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px', backgroundColor: '#f4f6f9' }}>
         {/* Lista de actividades */}
         <div style={{ width: '30%', padding: '10px', border: '1px solid #ddd', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', backgroundColor: '#fff' }}>
           <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>Actividades</h3>
-          <Button variant="" startIcon={<FontAwesomeIcon icon={faInfoCircle} />}>
-            Guía Iconos   
-          </Button> 
+         
+          <div>
+          <Button variant="" startIcon={<FontAwesomeIcon icon={faInfoCircle} onClick={handleOpen} />}>    </Button> 
+          <Modal
+            open={open}
+            onClose={handleClose}
+            aria-labelledby="modal-modal-title"
+            aria-describedby="modal-modal-description"
+          >
+          <Box sx={style}>
+            <Typography id="modal-modal-title" variant="h6" component="h2">
+              Guía de Iconos
+            </Typography>
+            <Typography id="modal-modal-description" sx={{ mt: 2 }}>
+              {/* Iterar sobre las clasificaciones únicas y mostrar el icono y la clasificación */}
+              {uniqueClassifications.map((classification, index) => (
+                <div key={index} style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                  {getIconByClassification(classification)} 
+                  <strong> <span style={{ marginLeft: '8px', fontSize: '16px' }}>{classification}</span></strong>
+                </div>
+              ))}
+            </Typography>
+          </Box>
+        </Modal>
+      </div>
           <div
             style={{
               minHeight: '300px',
