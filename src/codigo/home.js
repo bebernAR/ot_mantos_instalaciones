@@ -6,22 +6,25 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, MenuItem, Select, FormControl, InputLabel } from '@mui/material';
 import { NextArrow, PrevArrow } from './flechas';
-import { Build, Visibility, Done, CleaningServices, SwapHoriz } from '@mui/icons-material'; 
-
+import { Build, Visibility, Done, CleaningServices, SwapHoriz, EngineeringOutlined } from '@mui/icons-material'; 
+import { faInfoCircle } from '@fortawesome/free-solid-svg-icons'; //
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 const ItemType = 'ACTIVITY';
 
 const getIconByClassification = (classification) => {
   switch (classification.trim()) { // Usa trim para eliminar espacios en blanco si los hubiera
     case 'Inspección':
-      return <Visibility style={{ marginLeft: '10%', color: 'black', justifyItems:'flex-end'}} />; // Ícono de inspección
+      return <Visibility style={{ marginRight: '2px', color: 'black', justifyItems:'flex-end'}} />; // Ícono de inspección
     case 'Limpieza':
-      return <CleaningServices style={{ marginLeft: '10%', color: 'black' }} />; // Ícono de limpieza
+      return <CleaningServices style={{ marginRight: '2px', color: '#0e6f27' }} />; // Ícono de limpieza
     case 'Ajuste':
-      return <SwapHoriz style={{ marginRight: '8px', color: 'black' }} />; // Ícono de ajuste
+      return <SwapHoriz style={{ marginRight: '2px', color: '#73732b' }} />; // Ícono de ajuste
     case 'Remplazo Definitivo':
-      return <Build style={{ marginRight: '8px', color: 'black' }} />; // Ícono de reemplazo definitivo
+      return <Build style={{ marginRight: '2px', color: 'grey' }} />; // Ícono de reemplazo definitivo
+    case 'Instalación':
+      return <EngineeringOutlined style={{ marginRight: '2px', color: 'grey'}} />
     default:
-      return <Done style={{ marginRight: '8px', color: '#9e9e9e' }} />; // Ícono por defecto
+      return <Done style={{ marginRight: '2px', color: '#9e9e9e' }} />; // Ícono por defecto
   }
 };
 
@@ -289,7 +292,9 @@ const Home = () => {
         {/* Lista de actividades */}
         <div style={{ width: '30%', padding: '10px', border: '1px solid #ddd', borderRadius: '10px', boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)', backgroundColor: '#fff' }}>
           <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>Actividades</h3>
-          <button></button> {/* BOTON PARA DESPLEGAR ACORDEÓN DE ICONOS*/}
+          <Button variant="" startIcon={<FontAwesomeIcon icon={faInfoCircle} />}>
+            Guía Iconos   
+          </Button> 
           <div
             style={{
               minHeight: '300px',
