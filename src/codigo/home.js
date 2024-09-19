@@ -31,7 +31,7 @@ const getIconByClassification = (classification) => {
 };
 
 
-const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => {
+const Activity = ({ activity, index, moveActivity, origin, removeActivity, moveItemWithinMachine }) => {
   const [{ isDragging }, dragRef] = useDrag({
     type: ItemType,
     item: { index, origin },
@@ -40,9 +40,19 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => 
     }),
   });
 
+  const [, dropRef] = useDrop({
+    accept: ItemType,
+    hover(draggedItem) {
+      if (draggedItem.index !== index && draggedItem.origin === origin) {
+        moveItemWithinMachine(draggedItem.index, index, origin);
+        draggedItem.index = index;
+      }
+    },
+  });
+
   return (
     <div
-      ref={dragRef}
+      ref={(node) => dragRef(dropRef(node))}
       style={{
         padding: '15px',
         margin: '8px 0',
@@ -55,9 +65,9 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => 
         cursor: 'grab',
         fontFamily: 'Arial, sans-serif',
         fontSize: '14px',
-        display: 'flex', // Flexbox para alinear los elementos
-        justifyContent: 'space-between', // Alinea los elementos en los extremos (texto a la izquierda y icono a la derecha)
-        alignItems: 'center', // Asegura que estén alineados verticalmente
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
       }}
     >
       <strong>{activity.codigo + " - "}</strong>
@@ -82,74 +92,8 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => 
   );
 };
 
-const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) => {
-  const [{ isOver }, dropRef] = useDrop({
-    accept: ItemType,
-    drop: (item) => moveActivity(item.index, machine.name, item.origin),
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-    }),
-  });
 
-  const items = machine.items || [];
 
-  return (
-    <div
-      ref={dropRef}
-      style={{
-        padding: '20px',
-        backgroundColor: isOver ? '#e3f2fd' : '#f9f9f9',
-        minHeight: '300px',
-        border: '1px solid #ddd',
-        borderRadius: '10px',
-        marginBottom: '20px',
-      
-        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-        transition: 'background-color 0.3s ease',
-        textAlign: 'center',
-      }}
-    >
-      <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>{machine.name}</h3>
-
-    
-      <div
-        style={{
-          maxHeight: '200px', // Limita la altura máxima a 200px (ajusta según prefieras)
-          overflowY: 'auto',  // Habilita el scroll vertical si se excede la altura
-          paddingRight: '10px',  // Añade un pequeño padding para evitar que el scroll tape el contenido
-        }}
-      >
-        {items.map((item, index) => (
-          <Activity
-            key={item.id}
-            activity={item}
-            index={index}
-            moveActivity={moveActivity}
-            origin={machine.name}
-            removeActivity={removeActivity}
-          />
-        ))}
-      </div>
-
-      <Button
-        variant="contained"
-        color="primary"
-        style={{
-          marginTop: '20px',
-          backgroundColor: '#007bff',
-          color: '#fff',
-          borderRadius: '20px',
-          padding: '10px 20px',
-          textTransform: 'none',
-          boxShadow: '0 4px 8px rgba(0, 123, 255, 0.3)',
-        }}
-        onClick={() => handleSave(machine.name)}
-      >
-        Guardar
-      </Button>
-    </div>
-  );
-};
 
 
 const Home = () => {
@@ -161,7 +105,90 @@ const Home = () => {
   const [open, setOpen] = React.useState(false);
   const handleOpen = () => setOpen(true);
   const handleClose = () => setOpen(false);
-
+  const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) => {
+    const [{ isOver }, dropRef] = useDrop({
+      accept: ItemType,
+      drop: (item) => moveActivity(item.index, machine.name, item.origin),
+      collect: (monitor) => ({
+        isOver: monitor.isOver(),
+      }),
+    });
+  
+    // Función para mover actividades dentro de la misma máquina
+    const moveItemWithinMachine = (fromIndex, toIndex, origin) => {
+      setMachines((prev) => {
+        const updatedItems = [...prev[origin].items];
+        const [movedItem] = updatedItems.splice(fromIndex, 1);
+        updatedItems.splice(toIndex, 0, movedItem);
+  
+        return {
+          ...prev,
+          [origin]: {
+            ...prev[origin],
+            items: updatedItems,
+          },
+        };
+      });
+    };
+  
+    const items = machine.items || [];
+  
+    return (
+      <div
+        ref={dropRef}
+        style={{
+          padding: '20px',
+          backgroundColor: isOver ? '#e3f2fd' : '#f9f9f9',
+          minHeight: '300px',
+          border: '1px solid #ddd',
+          borderRadius: '10px',
+          marginBottom: '20px',
+          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
+          transition: 'background-color 0.3s ease',
+          textAlign: 'center',
+        }}
+      >
+        <h3 style={{ fontFamily: 'Arial, sans-serif', color: '#333' }}>{machine.name}</h3>
+  
+        <div
+          style={{
+            maxHeight: '200px', 
+            overflowY: 'auto',  
+            paddingRight: '10px',
+          }}
+        >
+          {items.map((item, index) => (
+            <Activity
+              key={item.id}
+              activity={item}
+              index={index}
+              moveActivity={moveActivity}
+              moveItemWithinMachine={moveItemWithinMachine} // Pasar la función de reordenar
+              origin={machine.name}
+              removeActivity={removeActivity}
+            />
+          ))}
+        </div>
+  
+        <Button
+          variant="contained"
+          color="primary"
+          style={{
+            marginTop: '20px',
+            backgroundColor: '#007bff',
+            color: '#fff',
+            borderRadius: '20px',
+            padding: '10px 20px',
+            textTransform: 'none',
+            boxShadow: '0 4px 8px rgba(0, 123, 255, 0.3)',
+          }}
+          onClick={() => handleSave(machine.name)}
+        >
+          Guardar
+        </Button>
+      </div>
+    );
+  };
 
   const familias = ['Router', 'Láser Co2', 'Láser Fibra Óptica', 'Plasma', 'Dobladora', 'Grua Neumática', 'Externa'];
 
