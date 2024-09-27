@@ -26,7 +26,7 @@ const getIconByClassification = (classification) => {
 };
 
 // Componente de actividad arrastrable
-const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => {
+const Activity = ({ activity, index, moveActivity, origin, removeActivity, moveItemConTecnico }) => {
   const theme = useTheme(); // Accede al tema actual
   const [{ isDragging }, dragRef] = useDrag({
     type: ItemType,
@@ -35,33 +35,61 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => 
       isDragging: monitor.isDragging(),
     }),
   });
+
+  
+  const [, dropRef] = useDrop({
+    accept: ItemType,
+    hover(draggedItem) {
+      if (draggedItem.index !== index && draggedItem.origin === origin) {
+        moveItemConTecnico(draggedItem.index, index, origin);
+        draggedItem.index = index;
+      }
+    },
+  });
 //ESTILOS PARA LA LISTA DRAGEABLE DE LAS ACTIVIDADES 
-  return (
-    <div
-      ref={dragRef}
-      style={{
-        padding: '15px',
-        margin: '8px 0',
-        backgroundColor: isDragging ? '#f0f0f0' : theme.palette.mode === 'dark' ? '#333' : '#fff',
-        color: theme.palette.mode === 'dark' ? '#fff' : '#000',  // Cambia el color del texto según el tema
-        border: '1px solid #ddd',
-        borderRadius: '8px',
-        boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
-        position: 'relative',
-        transition: 'background-color 0.2s ease',
-        cursor: 'grab',
-        fontFamily: 'Arial, sans-serif',
-        fontSize: '14px',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      }}
-    >
-      <strong>{activity.codigo + " - "}</strong>
-      {activity.titulo}
-      {getIconByClassification(activity.clasificacion)}
-    </div>
-  );
+return (
+  <div
+    ref={(node) => dragRef(dropRef(node))}
+    style={{
+      padding: '15px',
+      margin: '8px 0',
+      backgroundColor: isDragging ? '#f0f0f0' : theme.palette.mode === 'dark' ? '#333' : '#5555',
+      color: theme.palette.mode === 'dark' ? '#fff' : '#000',  // Cambia el color del texto según el tema
+      border: '1px solid #ddd',
+      borderRadius: '8px',
+      boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
+      position: 'relative',
+      transition: 'background-color 0.2s ease',
+      maxHeight:'300px',
+      overflowY:'auto',
+      cursor: 'grab',
+      fontFamily: 'Arial, sans-serif',
+      fontSize: '14px',
+      display: 'flex',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    }}
+  >
+    <strong>{activity.codigo + " - "}</strong>
+    {activity.titulo}
+    {getIconByClassification(activity.clasificacion)}
+    {origin !== 'activities' && (
+      <span
+        onClick={() => removeActivity(index, origin)}
+        style={{
+          position: 'absolute',
+          top: '5px',
+          right: '10px',
+          cursor: 'pointer',
+          color: 'red',
+          fontSize: '14px',
+        }}
+      >
+        ✖
+      </span>
+    )}
+  </div>
+);
 };
 
 // Zona de caída de técnicos
@@ -120,7 +148,7 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
       </Button>
 
       <div
-        style={{
+        style={{  
           marginTop: '20px',
           maxHeight: tecnico.items.length > 3 ? '200px' : 'auto',  // Limita la altura del contenedor de actividades
           overflowY: tecnico.items.length > 3 ? 'auto' : 'hidden', // Scroll solo si hay más de 3 actividades
@@ -136,6 +164,7 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
               moveActivity={moveActivity}
               origin={tecnico.id}
               removeActivity={removeActivity}
+              moveItemConTecnico={() => {}}
             />
           ))
         ) : (
@@ -244,6 +273,7 @@ const Tecnicos = () => {
                 index={index}
                 moveActivity={moveActivity}
                 origin="activities"
+                removeActivity={removeActivity}
               />
             ))}
 
@@ -258,6 +288,7 @@ const Tecnicos = () => {
             <TecnicoDropZone
               tecnico={tecnicoAsignado}
               moveActivity={moveActivity}
+              removeActivity={removeActivity}
             />
           )}
         </div>
