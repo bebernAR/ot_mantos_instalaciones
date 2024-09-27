@@ -6,7 +6,7 @@ import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { Button, Modal, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, MenuItem, Select, FormControl, InputLabel, Typography, Box } from '@mui/material';
 import { NextArrow, PrevArrow } from './flechas';
-import { Build, Visibility, Done, CleaningServices, SwapHoriz, EngineeringOutlined } from '@mui/icons-material'; 
+import { Build, Visibility, Done, CleaningServices, SwapHoriz, EngineeringOutlined } from '@mui/icons-material';
 import { faInfoCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { useTheme } from '@mui/material/styles';
@@ -24,14 +24,14 @@ const getIconByClassification = (classification) => {
     case 'Remplazo Definitivo':
       return <SwapHoriz style={{ marginRight: '2px', color: '#73732b' }} />;
     case 'Instalación':
-      return <EngineeringOutlined style={{ marginRight: '2px', color: 'black'}} />;
+      return <EngineeringOutlined style={{ marginRight: '2px', color: 'black' }} />;
     default:
       return <Done style={{ marginRight: '2px', color: 'black' }} />;
   }
 };
 
 const Activity = ({ activity, index, moveActivity, origin, removeActivity, moveItemWithinMachine }) => {
-  const theme = useTheme(); // Obtén el tema actual (oscuro o claro)
+  const theme = useTheme();
   const [{ isDragging }, dragRef] = useDrag({
     type: ItemType,
     item: { index, origin },
@@ -57,7 +57,7 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, moveI
         padding: '15px',
         margin: '8px 0',
         backgroundColor: isDragging ? '#f0f0f0' : theme.palette.mode === 'dark' ? '#333' : '#fff',
-        color: theme.palette.mode === 'dark' ? '#fff' : '#000',  // Cambia el color del texto según el tema
+        color: theme.palette.mode === 'dark' ? '#fff' : '#000',
         border: '1px solid #ddd',
         borderRadius: '8px',
         boxShadow: '0 4px 8px rgba(0,0,0,0.1)',
@@ -93,7 +93,7 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, moveI
   );
 };
 
-const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) => {
+const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity, moveItemWithinMachine }) => {
   const theme = useTheme();
   const [{ isOver }, dropRef] = useDrop({
     accept: ItemType,
@@ -116,7 +116,7 @@ const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) 
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
         transition: 'background-color 0.3s ease',
         textAlign: 'center',
-        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', // Ajuste del color del texto
+        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
       }}
     >
       <Typography variant="h5" style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
@@ -136,7 +136,7 @@ const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) 
             activity={item}
             index={index}
             moveActivity={moveActivity}
-            moveItemWithinMachine={() => {}}
+            moveItemWithinMachine={moveItemWithinMachine}  // Pasar la función correctamente
             origin={machine.name}
             removeActivity={removeActivity}
           />
@@ -164,7 +164,7 @@ const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity }) 
 };
 
 const Home = () => {
-  const theme = useTheme(); // Obtén el tema actual (oscuro o claro)
+  const theme = useTheme();
   const [activities, setActivities] = useState([]);
   const [machines, setMachines] = useState({});
   const [familiaSeleccionada, setFamiliaSeleccionada] = useState('');
@@ -229,6 +229,22 @@ const Home = () => {
     }
   };
 
+  const moveItemWithinMachine = (fromIndex, toIndex, machineId) => {
+    setMachines((prev) => {
+      const updatedItems = [...prev[machineId].items];
+      const [movedItem] = updatedItems.splice(fromIndex, 1);
+      updatedItems.splice(toIndex, 0, movedItem);
+
+      return {
+        ...prev,
+        [machineId]: {
+          ...prev[machineId],
+          items: updatedItems,
+        },
+      };
+    });
+  };
+
   const removeActivity = (index, originId) => {
     if (originId !== 'activities') {
       setMachines((prev) => ({
@@ -250,12 +266,13 @@ const Home = () => {
 
     const payload = {
       familia: familiaSeleccionada,
-      equipo: machine.name,
+      maquina: machine.name,
       actividades: machine.items.map((item) => ({
         actividad: item.titulo,
         id_actividad: item.id,
       })),
     };
+    console.log(payload);
 
     try {
       const response = await fetch('https://teknia.app/api3/crear_equipo_mantto', {
@@ -355,6 +372,7 @@ const Home = () => {
                 activity={activity}
                 index={index}
                 moveActivity={moveActivity}
+                moveItemWithinMachine={() => {}}
                 origin="activities"
                 removeActivity={removeActivity}
               />
@@ -373,6 +391,7 @@ const Home = () => {
                   moveActivity={moveActivity}
                   handleSave={handleSave}
                   removeActivity={removeActivity}
+                  moveItemWithinMachine={moveItemWithinMachine}  // Pasar la función aquí también
                 />
               ))
             ) : (
