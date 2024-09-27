@@ -293,7 +293,7 @@ const Tecnicos = () => {
           border: '1px solid #ddd', 
           borderRadius: '10px', 
           padding: '10px', 
-          backgroundColor: theme.palette.mode === 'dark' ? '#ffffff' : '#ffffff', 
+          backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#ffffff', 
           maxHeight: '400px',  // Limita la altura máxima
           overflowY: 'auto'    // Aplica scroll vertical cuando sea necesario
         }}>
