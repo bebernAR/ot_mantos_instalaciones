@@ -190,6 +190,9 @@ const Tecnicos = () => {
   const [tecnicos, setTecnicos] = useState([]);  // Técnicos obtenidos de la API
   const [selectedTecnico, setSelectedTecnico] = useState('');  // Técnico seleccionado
   const [tecnicoAsignado, setTecnicoAsignado] = useState(null);
+  const [familiaSeleccionada, setFamiliaSeleccionada] = useState('');
+  
+  const [machines, setMachines] = useState({});
   
   const theme = useTheme();  // Técnico asignado con actividades
 
@@ -217,6 +220,28 @@ const Tecnicos = () => {
     fetchActivities();
     fetchTecnicos();
   }, []);
+
+  useEffect(() => {
+    if (familiaSeleccionada) {
+      const fetchMachines = async () => {
+        try {
+          const response = await fetch(`https://teknia.app/api/actividades_tecnicas/maquinas/${familiaSeleccionada}`);
+          const data = await response.json();
+
+          const updatedMachines = data.reduce((acc, machine) => {
+            acc[machine.maquina] = { name: machine.maquina, items: [] };
+            return acc;
+          }, {});
+
+          setMachines(updatedMachines);
+        } catch (error) {
+          console.error('Error al obtener las máquinas:', error);
+        }
+      };
+
+      fetchMachines();
+    }
+  }, [familiaSeleccionada]);
 
   const moveActivity = (index, destinationId, originId) => {
     const activity = originId === 'activities' ? activities[index] : tecnicoAsignado.items[index];
@@ -263,21 +288,29 @@ const Tecnicos = () => {
               ))}
             </Select>
           </FormControl>
-          <div style={{ marginTop: '20px', border: '1px solid #ddd', borderRadius: '10px', padding: '10px', backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#ffffff' }}>
-            <h3 style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' ,overflowY: 'scroll !important',  }}>Actividades</h3>
-            
-            {activities.map((activity, index) => (
-              <Activity
-                key={activity.id}
-                activity={activity}
-                index={index}
-                moveActivity={moveActivity}
-                origin="activities"
-                removeActivity={removeActivity}
-              />
-            ))}
+          <div style={{ 
+          marginTop: '20px', 
+          border: '1px solid #ddd', 
+          borderRadius: '10px', 
+          padding: '10px', 
+          backgroundColor: theme.palette.mode === 'dark' ? '#ffffff' : '#ffffff', 
+          maxHeight: '400px',  // Limita la altura máxima
+          overflowY: 'auto'    // Aplica scroll vertical cuando sea necesario
+        }}>
+          <h3 style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Actividades</h3>
+          
+          {activities.map((activity, index) => (
+            <Activity
+              key={activity.id}
+              activity={activity}
+              index={index}
+              moveActivity={moveActivity}
+              origin="activities"
+              removeActivity={removeActivity}
+            />
+          ))}
+        </div>
 
-          </div>
         </div>
 
         <div 
@@ -293,7 +326,23 @@ const Tecnicos = () => {
           )}
         </div>
       </div>
+      <FormControl fullWidth style={{ marginBottom: '20px' }}>
+        <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una familia</InputLabel>
+        <Select
+          value={familiaSeleccionada}
+          onChange={(e) => setFamiliaSeleccionada(e.target.value)}
+          label="Selecciona una familia"
+          style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
+        >
+          {['Router', 'Láser Co2', 'Láser Fibra Óptica', 'Plasma', 'Dobladora', 'Grua Neumática', 'Externa'].map((familia) => (
+            <MenuItem key={familia} value={familia}>
+              {familia}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
     </DndProvider>
+    
   );
 };
 
