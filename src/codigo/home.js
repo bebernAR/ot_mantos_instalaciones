@@ -264,35 +264,39 @@ const Home = () => {
       return;
     }
 
-    const payload = {
-      familia: familiaSeleccionada,
-      maquina: machine.name,
-      actividades: machine.items.map((item) => ({
+    // Iterar sobre cada actividad y hacer una solicitud para cada una
+    for (const item of machine.items) {
+      const payload = {
+        familia: familiaSeleccionada,
+        maquina: machine.name,
         actividad: item.titulo,
         id_actividad: item.id,
-      })),
-    };
-    console.log(payload);
+        activo: true, // Ajusta este campo según necesites, si está en los datos o es fijo.
+      };
 
-    try {
-      const response = await fetch('https://teknia.app/api3/crear_equipo_mantto', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
-      });
+      console.log('Enviando payload:', payload);
 
-      if (response.ok) {
-        const result = await response.json();
-        console.log('Datos guardados con éxito:', result);
-      } else {
-        console.error('Error al guardar los datos:', response.statusText);
+      try {
+        const response = await fetch('https://teknia.app/api3/crear_equipo_mantto', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        if (response.ok) {
+          const result = await response.json();
+          console.log('Actividad guardada con éxito:', result);
+        } else {
+          console.error('Error al guardar la actividad:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error al hacer la solicitud a la API:', error);
       }
-    } catch (error) {
-      console.error('Error al hacer la solicitud a la API:', error);
     }
   };
+
 
   const handleCloseModal = () => {
     setModalOpen(false);
@@ -333,7 +337,7 @@ const Home = () => {
           <h3 style={{ fontFamily: 'Arial, sans-serif', color: theme.palette.mode === 'dark' ? '#fff' : '#000' }}>Actividades</h3>
 
           <div>
-            <Button startIcon={<FontAwesomeIcon icon={faInfoCircle} />} onClick={handleOpen} style={{cursor: 'help'}}>Guía de Iconos</Button>
+            <Button startIcon={<FontAwesomeIcon icon={faInfoCircle} />} onClick={handleOpen} style={{ cursor: 'help' }}>Guía de Iconos</Button>
             <Modal
               open={open}
               onClose={handleClose}
@@ -372,7 +376,7 @@ const Home = () => {
                 activity={activity}
                 index={index}
                 moveActivity={moveActivity}
-                moveItemWithinMachine={() => {}}
+                moveItemWithinMachine={() => { }}
                 origin="activities"
                 removeActivity={removeActivity}
               />
