@@ -14,6 +14,11 @@ import { useTheme } from '@mui/material/styles';
 const ItemType = 'ACTIVITY';
 
 const getIconByClassification = (classification) => {
+  // Verifica si classification existe antes de llamar a trim
+  if (!classification) {
+    return <Done style={{ marginRight: '2px', color: 'black' }} />; // Valor por defecto en caso de que classification sea null o undefined
+  }
+
   switch (classification.trim()) {
     case 'Inspección':
       return <Visibility style={{ marginRight: '2px', color: '#246eb8' }} />;
@@ -29,6 +34,7 @@ const getIconByClassification = (classification) => {
       return <Done style={{ marginRight: '2px', color: 'black' }} />;
   }
 };
+
 
 const Activity = ({ activity, index, moveActivity, origin, removeActivity, moveItemWithinMachine }) => {
   const theme = useTheme();
@@ -71,7 +77,7 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, moveI
         alignItems: 'center',
       }}
     >
-      <strong>{activity.codigo + " - "}</strong>
+      {/* <strong>{activity.codigo + " - "}</strong> */}
       {activity.titulo}
       {getIconByClassification(activity.clasificacion)}
       {origin !== 'activities' && (
@@ -179,23 +185,39 @@ const Home = () => {
     if (familiaSeleccionada) {
       const fetchMachines = async () => {
         try {
-          const response = await fetch(`https://teknia.app/api/actividades_tecnicas/maquinas/${familiaSeleccionada}`);
+          const response = await fetch(`https://teknia.app/api3/actividades_tecnicas/maquinas_actividades/${familiaSeleccionada}`);
           const data = await response.json();
 
           const updatedMachines = data.reduce((acc, machine) => {
-            acc[machine.maquina] = { name: machine.maquina, items: [] };
+            if (!acc[machine.maquina]) {
+              acc[machine.maquina] = { name: machine.maquina, items: [] };
+            }
+
+            // Si la máquina tiene actividades (no es null), las añadimos
+            if (machine.actividades && machine.actividades.length > 0) {
+              machine.actividades.forEach((actividad, index) => {
+                acc[machine.maquina].items.push({
+                  id: `${machine.maquina}-${index}`, // Genera un ID único
+                  titulo: actividad,
+                  clasificacion: null, // Si tienes clasificación, también puedes añadirla aquí
+                });
+              });
+            }
+
             return acc;
           }, {});
 
           setMachines(updatedMachines);
         } catch (error) {
-          console.error('Error al obtener las máquinas:', error);
+          console.error('Error al obtener las máquinas y actividades:', error);
         }
       };
 
       fetchMachines();
     }
   }, [familiaSeleccionada]);
+
+
 
   useEffect(() => {
     const fetchActivities = async () => {
@@ -213,9 +235,12 @@ const Home = () => {
 
   const moveActivity = (index, destinationId, originId) => {
     const activity = originId === 'activities' ? activities[index] : machines[originId].items[index];
-    const activityAlreadyExists = machines[destinationId]?.items.some((item) => item.id === activity.id);
-
+  
+    // Verificamos si la actividad ya existe en la máquina (por su `titulo` o `id` dependiendo de tu criterio)
+    const activityAlreadyExists = machines[destinationId]?.items.some((item) => item.titulo === activity.titulo);
+  
     if (!activityAlreadyExists) {
+      // Si no existe, agregamos la actividad a la máquina
       setMachines((prev) => ({
         ...prev,
         [destinationId]: {
@@ -224,6 +249,7 @@ const Home = () => {
         },
       }));
     } else {
+      // Si ya existe, mostramos el modal de actividad duplicada
       setDuplicateActivity(activity);
       setModalOpen(true);
     }
@@ -271,7 +297,7 @@ const Home = () => {
         maquina: machine.name,
         actividad: item.titulo,
         id_actividad: item.id,
-        activo: true, // Ajusta este campo según necesites, si está en los datos o es fijo.
+        activo: true,
       };
 
       console.log('Enviando payload:', payload);
@@ -296,7 +322,6 @@ const Home = () => {
       }
     }
   };
-
 
   const handleCloseModal = () => {
     setModalOpen(false);
@@ -355,7 +380,7 @@ const Home = () => {
                       <strong><span style={{ marginLeft: '8px', fontSize: '16px' }}>{classification}</span></strong>
                     </div>
                   ))}
-                </Typography>
+                </Typography>S
               </Box>
             </Modal>
           </div>
