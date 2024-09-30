@@ -26,7 +26,7 @@ const getIconByClassification = (classification) => {
 };
 
 // Componente para renderizar una actividad
-const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => {
+const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecnicoAsignado, maquinaSeleccionada }) => {
   const theme = useTheme();
   const [{ isDragging }, dragRef] = useDrag({
     type: ItemType,
@@ -45,6 +45,17 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => 
       }
     },
   });
+
+  const handleGuardar = () => {
+    const actividadConDetalles = {
+      ...activity,
+      tecnico: tecnicoAsignado?.nombre_tecnico || "Ningún técnico seleccionado",
+      maquina: maquinaSeleccionada || "Ninguna máquina seleccionada",
+    };
+
+    // Imprimir la actividad con detalles de técnico y máquina
+    console.log("Actividad guardada con detalles de técnico y máquina:", actividadConDetalles);
+  };
 
   return (
     <div
@@ -88,9 +99,17 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => 
           ✖
         </span>
       )}
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={handleGuardar} // Llamada al manejar el guardado de la actividad con técnico y máquina
+      >
+        Guardar
+      </Button>
     </div>
   );
 };
+
 
 // Zona de drop para los técnicos
 const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
@@ -142,7 +161,7 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
           textTransform: 'none',
           boxShadow: '0 4px 8px rgba(25, 118, 210, 0.4)',
         }}
-        onClick={() => null}
+        onClick={() => console.log("Actividades guardadas: ", tecnico.items)}
       >
         Guardar
       </Button>
@@ -164,6 +183,7 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
               moveActivity={moveActivity}
               origin={tecnico.id}
               removeActivity={removeActivity}
+              
             />
           ))
         ) : (
@@ -274,6 +294,28 @@ const Tecnicos = () => {
     setTecnicoAsignado({ ...tecnico, items: [] });
   };
 
+ const handleGuardar = () => {
+    const actividadesActuales = tecnicoAsignado?.items || [];
+    const actividadesAñadidas = actividadesMaquina.filter(a => !actividadesActuales.some(actividad => actividad.titulo === a));
+
+    // Verificación de valores de técnico y máquina
+    const maquinaSeleccionada = tecnicoAsignado?.maquina || "Ninguna máquina seleccionada";
+    const tecnicoSeleccionado = tecnicoAsignado?.nombre_tecnico || "Ningún técnico seleccionado";
+
+    // Combina todas las actividades (ya establecidas + nuevas) y agrega máquina y técnico
+    const actividadesConDetalles = [...actividadesActuales, ...actividadesAñadidas].map(actividad => ({
+        ...actividad,
+        maquina: maquinaSeleccionada,
+        tecnico: tecnicoSeleccionado
+    }));
+
+    // Imprimir en consola el resultado
+    console.log("Actividades con detalles de máquina y técnico:", actividadesConDetalles);
+};
+
+
+
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between' }}>
@@ -312,6 +354,8 @@ const Tecnicos = () => {
                 moveActivity={moveActivity}
                 origin="activities"
                 removeActivity={removeActivity}
+                tecnicoAsignado={tecnicoAsignado} // Pasar técnico asignado
+                maquinaSeleccionada={tecnicoAsignado?.maquina} // Pasar
               />
             ))}
           </div>
@@ -382,6 +426,23 @@ const Tecnicos = () => {
           </Select>
         </FormControl>
       )}
+
+      {/* Botón para imprimir actividades y máquina seleccionada en consola */}
+      <Button
+        variant="contained"
+        color="primary"
+        style={{
+          marginTop: '20px',
+          backgroundColor: theme.palette.mode === 'dark' ? '#1976d2' : '#007bff',
+          color: '#fff',
+          borderRadius: '20px',
+          padding: '10px 20px',
+          textTransform: 'none',
+        }}
+        onClick={handleGuardar}
+      >
+        Guardar
+      </Button>
     </DndProvider>
   );
 };
