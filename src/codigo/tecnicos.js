@@ -99,13 +99,7 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecni
           ✖
         </span>
       )}
-      <Button
-        variant="contained"
-        color="primary"
-        onClick={handleGuardar} // Llamada al manejar el guardado de la actividad con técnico y máquina
-      >
-        Guardar
-      </Button>
+     
     </div>
   );
 };
