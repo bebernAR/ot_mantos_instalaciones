@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { Button, MenuItem, Select, FormControl, InputLabel, Typography } from '@mui/material';
-import { Build, Visibility, Done, CleaningServices, SwapHoriz, EngineeringOutlined } from '@mui/icons-material'; 
+import { Build, Visibility, Done, CleaningServices, SwapHoriz, EngineeringOutlined } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 
 const ItemType = 'ACTIVITY';
@@ -53,7 +53,6 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecni
       maquina: maquinaSeleccionada || "Ninguna máquina seleccionada",
     };
 
-    // Imprimir la actividad con detalles de técnico y máquina
     console.log("Actividad guardada con detalles de técnico y máquina:", actividadConDetalles);
   };
 
@@ -80,9 +79,7 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecni
         alignItems: 'center',
       }}
     >
-      <strong>{activity.codigo} - {activity.titulo}</strong>
-      {/* Mostramos el objetivo si está disponible */}
-      <span>{activity.objetivo}</span>
+      <strong>{activity.id} - {activity.actividad}</strong>  {/* Ahora accedemos a `actividad.actividad` */}
       {getIconByClassification(activity.clasificacion)}
       {origin !== 'activities' && (
         <span
@@ -99,10 +96,10 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecni
           ✖
         </span>
       )}
-     
     </div>
   );
 };
+
 
 
 // Zona de drop para los técnicos
@@ -135,9 +132,9 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
       <Typography
         variant="h5"
         component="h3"
-        style={{ 
-          color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000', 
-          marginBottom: '20px' 
+        style={{
+          color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+          marginBottom: '20px'
         }}
       >
         {tecnico.nombre_tecnico}
@@ -161,7 +158,7 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
       </Button>
 
       <div
-        style={{  
+        style={{
           marginTop: '20px',
           maxHeight: tecnico.items && tecnico.items.length > 3 ? '200px' : 'auto',
           overflowY: tecnico.items && tecnico.items.length > 3 ? 'auto' : 'hidden',
@@ -177,7 +174,7 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
               moveActivity={moveActivity}
               origin={tecnico.id}
               removeActivity={removeActivity}
-              
+
             />
           ))
         ) : (
@@ -255,6 +252,7 @@ const Tecnicos = () => {
     if (tecnicoAsignado && tecnicoAsignado.maquina && maquinas.length > 0) {
       const maquinaSeleccionada = maquinas.find(m => m.maquina === tecnicoAsignado.maquina);
       if (maquinaSeleccionada && maquinaSeleccionada.actividades) {
+        // Asegurarnos de que trabajamos con los objetos `actividad`
         setActividadesMaquina(maquinaSeleccionada.actividades);
       } else {
         setActividadesMaquina([]);
@@ -288,7 +286,7 @@ const Tecnicos = () => {
     setTecnicoAsignado({ ...tecnico, items: [] });
   };
 
- const handleGuardar = () => {
+  const handleGuardar = () => {
     const actividadesActuales = tecnicoAsignado?.items || [];
     const actividadesAñadidas = actividadesMaquina.filter(a => !actividadesActuales.some(actividad => actividad.titulo === a));
 
@@ -298,14 +296,14 @@ const Tecnicos = () => {
 
     // Combina todas las actividades (ya establecidas + nuevas) y agrega máquina y técnico
     const actividadesConDetalles = [...actividadesActuales, ...actividadesAñadidas].map(actividad => ({
-        ...actividad,
-        maquina: maquinaSeleccionada,
-        tecnico: tecnicoSeleccionado
+      ...actividad,
+      maquina: maquinaSeleccionada,
+      tecnico: tecnicoSeleccionado
     }));
 
     // Imprimir en consola el resultado
     console.log("Actividades con detalles de máquina y técnico:", actividadesConDetalles);
-};
+  };
 
 
 
@@ -329,17 +327,17 @@ const Tecnicos = () => {
               ))}
             </Select>
           </FormControl>
-          <div style={{ 
-            marginTop: '20px', 
-            border: '1px solid #ddd', 
-            borderRadius: '10px', 
-            padding: '10px', 
-            backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#ffffff', 
+          <div style={{
+            marginTop: '20px',
+            border: '1px solid #ddd',
+            borderRadius: '10px',
+            padding: '10px',
+            backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#ffffff',
             maxHeight: '400px',
             overflowY: 'auto'
           }}>
             <h3 style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Actividades</h3>
-            
+
             {activities.map((activity, index) => (
               <Activity
                 key={activity.id}
@@ -373,8 +371,8 @@ const Tecnicos = () => {
               </Typography>
               {actividadesMaquina.length > 0 ? (
                 actividadesMaquina.map((actividad, index) => (
-                  <div key={index} style={{ padding: '10px', borderBottom: '1px solid #ddd' }}>
-                    {actividad} {/* Renderizamos directamente la cadena de texto */}
+                  <div key={actividad.id} style={{ padding: '10px', borderBottom: '1px solid #ddd' }}>
+                    {actividad.actividad}  {/* Ahora accedemos a `actividad.actividad` */}
                   </div>
                 ))
               ) : (

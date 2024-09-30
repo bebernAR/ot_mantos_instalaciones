@@ -138,13 +138,13 @@ const MachineDropZone = ({ machine, moveActivity, handleSave, removeActivity, mo
       >
         {machine.items.map((item, index) => (
           <Activity
-            key={item.id}
+            key={item.id} // Usar el id como la clave
             activity={item}
             index={index}
             moveActivity={moveActivity}
-            moveItemWithinMachine={moveItemWithinMachine}  // Pasar la función correctamente
+            moveItemWithinMachine={moveItemWithinMachine}
             origin={machine.name}
-            removeActivity={removeActivity}
+            removeActivity={removeActivity} // Pasar la función para eliminar
           />
         ))}
       </div>
@@ -183,6 +183,7 @@ const Home = () => {
 
   useEffect(() => {
     if (familiaSeleccionada) {
+
       const fetchMachines = async () => {
         try {
           const response = await fetch(`https://teknia.app/api3/actividades_tecnicas/maquinas_actividades/${familiaSeleccionada}`);
@@ -193,13 +194,13 @@ const Home = () => {
               acc[machine.maquina] = { name: machine.maquina, items: [] };
             }
 
-            // Si la máquina tiene actividades (no es null), las añadimos
+            // Si la máquina tiene actividades, las añadimos con sus IDs reales
             if (machine.actividades && machine.actividades.length > 0) {
-              machine.actividades.forEach((actividad, index) => {
+              machine.actividades.forEach((actividad) => {
                 acc[machine.maquina].items.push({
-                  id: `${machine.maquina}-${index}`, // Genera un ID único
-                  titulo: actividad,
-                  clasificacion: null, // Si tienes clasificación, también puedes añadirla aquí
+                  id: actividad.id,  // Aquí usamos el id real de la base de datos
+                  titulo: actividad.actividad,
+                  clasificacion: null, // Puedes añadir la clasificación si está disponible
                 });
               });
             }
@@ -212,6 +213,7 @@ const Home = () => {
           console.error('Error al obtener las máquinas y actividades:', error);
         }
       };
+
 
       fetchMachines();
     }
@@ -235,10 +237,10 @@ const Home = () => {
 
   const moveActivity = (index, destinationId, originId) => {
     const activity = originId === 'activities' ? activities[index] : machines[originId].items[index];
-  
+
     // Verificamos si la actividad ya existe en la máquina (por su `titulo` o `id` dependiendo de tu criterio)
     const activityAlreadyExists = machines[destinationId]?.items.some((item) => item.titulo === activity.titulo);
-  
+
     if (!activityAlreadyExists) {
       // Si no existe, agregamos la actividad a la máquina
       setMachines((prev) => ({
@@ -271,17 +273,42 @@ const Home = () => {
     });
   };
 
-  const removeActivity = (index, originId) => {
-    if (originId !== 'activities') {
-      setMachines((prev) => ({
-        ...prev,
-        [originId]: {
-          ...prev[originId],
-          items: prev[originId].items.filter((_, i) => i !== index),
-        },
-      }));
+  const removeActivity = async (index, originId) => {
+    const activityToRemove = machines[originId]?.items[index];
+
+    // Verificar si hay una actividad válida para eliminar
+    if (!activityToRemove || !activityToRemove.id) {
+      console.error('No se encontró la actividad a eliminar o falta el id.');
+      return;
+    }
+
+    // Enviar solicitud DELETE a la API
+    try {
+      const response = await fetch(`https://teknia.app/api3/eliminar_equipo_mantto/${activityToRemove.id}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        // Si la eliminación fue exitosa, actualizar el estado local
+        setMachines((prev) => ({
+          ...prev,
+          [originId]: {
+            ...prev[originId],
+            items: prev[originId].items.filter((_, i) => i !== index),
+          },
+        }));
+        console.log('Actividad eliminada con éxito.');
+      } else if (response.status === 404) {
+        console.error('Error: Actividad no encontrada.');
+      } else {
+        console.error('Error al eliminar la actividad:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error al hacer la solicitud de eliminación a la API:', error);
     }
   };
+
+
 
   const handleSave = async (machineId) => {
     const machine = machines[machineId];
