@@ -16,7 +16,7 @@ const ItemType = 'ACTIVITY';
 const getIconByClassification = (classification) => {
   // Verifica si classification existe antes de llamar a trim
   if (!classification) {
-    return <Done style={{ marginRight: '2px', color: 'black' }} />; // Valor por defecto en caso de que classification sea null o undefined
+    return null;  // No retornar ningún ícono si no hay clasificación
   }
 
   switch (classification.trim()) {
@@ -31,9 +31,11 @@ const getIconByClassification = (classification) => {
     case 'Instalación':
       return <EngineeringOutlined style={{ marginRight: '2px', color: 'black' }} />;
     default:
-      return <Done style={{ marginRight: '2px', color: 'black' }} />;
+      return null;  // Eliminar el ícono por defecto
   }
 };
+
+
 
 
 const Activity = ({ activity, index, moveActivity, origin, removeActivity, moveItemWithinMachine }) => {
@@ -407,7 +409,7 @@ const Home = () => {
                       <strong><span style={{ marginLeft: '8px', fontSize: '16px' }}>{classification}</span></strong>
                     </div>
                   ))}
-                </Typography>S
+                </Typography>
               </Box>
             </Modal>
           </div>
