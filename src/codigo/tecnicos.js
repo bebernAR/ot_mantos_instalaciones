@@ -312,21 +312,60 @@ const Tecnicos = () => {
     <DndProvider backend={HTML5Backend}>
       <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between' }}>
         <div style={{ width: '30%' }}>
-          <FormControl fullWidth>
-            <InputLabel>Técnico</InputLabel>
-            <Select
-              value={selectedTecnico}
-              onChange={handleTecnicoChange}
-              label="Técnico"
-              style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
-            >
-              {tecnicos.map((tecnico) => (
-                <MenuItem key={tecnico.id} value={tecnico.id}>
-                  {tecnico.nombre_tecnico}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          <div style={{padding: "5px"}}>
+            <FormControl fullWidth>
+              <InputLabel>Técnico</InputLabel>
+              <Select
+                value={selectedTecnico}
+                onChange={handleTecnicoChange}
+                label="Técnico"
+                style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
+              >
+                {tecnicos.map((tecnico) => (
+                  <MenuItem key={tecnico.id} value={tecnico.id}>
+                    {tecnico.nombre_tecnico}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </div>
+          <div style={{padding: "5px"}}>
+            <FormControl fullWidth>
+              <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una familia</InputLabel>
+              <Select
+                value={familiaSeleccionada}
+                onChange={(e) => setFamiliaSeleccionada(e.target.value)}
+                label="Selecciona una familia"
+                style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
+              >
+                {['Router', 'Láser Co2', 'Láser Fibra Óptica', 'Plasma', 'Dobladora', 'Grua Neumática', 'Externa'].map((familia) => (
+                  <MenuItem key={familia} value={familia}>
+                    {familia}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </div>
+
+          {familiaSeleccionada && (
+            <div style={{padding: "5px"}}>
+              <FormControl fullWidth>
+                <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una máquina</InputLabel>
+                <Select
+                  value={tecnicoAsignado?.maquina || ''}
+                  onChange={(e) => setTecnicoAsignado((prev) => ({ ...prev, maquina: e.target.value }))}
+                  label="Selecciona una máquina"
+                  style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
+                >
+                  {maquinas.map((maquina) => (
+                    <MenuItem key={maquina.maquina} value={maquina.maquina}>
+                      {maquina.maquina}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </div>
+          )}
           <div style={{
             marginTop: '20px',
             border: '1px solid #ddd',
@@ -384,40 +423,6 @@ const Tecnicos = () => {
           )}
         </div>
       </div>
-
-      <FormControl fullWidth style={{ marginBottom: '20px' }}>
-        <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una familia</InputLabel>
-        <Select
-          value={familiaSeleccionada}
-          onChange={(e) => setFamiliaSeleccionada(e.target.value)}
-          label="Selecciona una familia"
-          style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
-        >
-          {['Router', 'Láser Co2', 'Láser Fibra Óptica', 'Plasma', 'Dobladora', 'Grua Neumática', 'Externa'].map((familia) => (
-            <MenuItem key={familia} value={familia}>
-              {familia}
-            </MenuItem>
-          ))}
-        </Select>
-      </FormControl>
-
-      {familiaSeleccionada && (
-        <FormControl fullWidth>
-          <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una máquina</InputLabel>
-          <Select
-            value={tecnicoAsignado?.maquina || ''}
-            onChange={(e) => setTecnicoAsignado((prev) => ({ ...prev, maquina: e.target.value }))}
-            label="Selecciona una máquina"
-            style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
-          >
-            {maquinas.map((maquina) => (
-              <MenuItem key={maquina.maquina} value={maquina.maquina}>
-                {maquina.maquina}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      )}
 
       {/* Botón para imprimir actividades y máquina seleccionada en consola */}
       <Button

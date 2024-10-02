@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, act } from 'react';
 import axios from 'axios';
 import {
   Table, TableBody, TableCell, TableContainer, TableSortLabel, TablePagination,
@@ -10,7 +10,7 @@ const API_URL = 'https://teknia.app/api3';
 
 function ActivityPage() {
   const [actividades, setActividades] = useState([]);
-  const [newActividad, setNewActividad] = useState({ codigo: '', titulo: '', objetivo: '' });
+  const [newActividad, setNewActividad] = useState({ codigo: '', titulo: '', objetivo: '', tiempo_estimado: ''});
   const [editActividad, setEditActividad] = useState(null);
   const [dialogOpen, setDialogOpen] = useState(false);
 
@@ -42,14 +42,32 @@ function ActivityPage() {
       ...newActividad,
       clasificacion: clasificacion,
       activo: true
-    }
+    };
+  
     try {
-      await axios.post(`${API_URL}/crear_actividad_mantto`, data);
+      // Realiza la solicitud POST y captura la respuesta
+      const response = await axios.post(`${API_URL}/crear_actividad_mantto`, data);
+  
+      // Mostrar la respuesta en un alert, puedes acceder a los campos retornados
+      alert(`Actividad creada: Código ${response.data.codigo}`);
+  
+      // Refresca las actividades
       fetchActividades();
-      setNewActividad({ codigo: '', titulo: '', objetivo: '' });
+  
+      // Limpiar el formulario
+      setNewActividad({ codigo: '', titulo: '', objetivo: '', tiempo_estimado: '' });
       setClasificacion("");
     } catch (error) {
-      console.error('Error adding Actividad:', error);
+      // Manejar el error según el tipo de error que retorna el servidor
+      if (error.response && error.response.status === 400) {
+        // Si el error es que el código ya existe, mostrar un mensaje en un alert
+        alert(error.response.data.error || 'El código ya existe. Por favor, elija un código diferente.');
+      } else {
+        // Si es otro tipo de error, mostrar un mensaje genérico de error
+        alert('Error interno del servidor. Por favor, intente nuevamente.');
+      }
+  
+      console.error('Error al crear la actividad:', error);
     }
   };
 
@@ -58,14 +76,23 @@ function ActivityPage() {
       ...editActividad,
       clasificacion: clasification,
       activo: true
-    }
+    };
+  
     try {
-      await axios.put(`${API_URL}/actualizar_actividad_mantto/${editActividad.id}`, data);
+      // Realizar la solicitud PUT y guardar la respuesta
+      const response = await axios.put(`${API_URL}/actualizar_actividad_mantto/${editActividad.id}`, data);
+  
+      // Mostrar el mensaje de éxito retornado por la API en un alert
+      alert(`Actividad actualizada: ${response.data.message || 'Actualización exitosa'}`);
+  
+      // Refrescar actividades y resetear el formulario
       fetchActividades();
       setDialogOpen(false);
       setEditActividad(null);
       setClasification("");
     } catch (error) {
+      // Mostrar el mensaje de error retornado por la API en un alert
+      alert(`Error al actualizar la actividad: ${error.response?.data?.message || error.message}`);
       console.error('Error editing Actividad:', error);
     }
   };
@@ -171,6 +198,21 @@ function ActivityPage() {
                       Sustitución Temporal
                     </MenuItem>
                 </Select>
+                <TextField
+                  label="Tiempo Estimado (hrs)"
+                  value={newActividad.tiempo_estimado}
+                  onChange={(e) => {
+                    // Validar que solo se ingresen números enteros
+                    const newValue = e.target.value;
+                    if (/^\d*$/.test(newValue)) {
+                      // Solo actualizar el valor si es un número entero
+                      setNewActividad({ ...newActividad, tiempo_estimado: newValue });
+                    }
+                  }}
+                  fullWidth
+                  sx={{ mb: 2 }}
+                  inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} // Sugerir teclado numérico en móviles
+                />
                 <Button variant="contained" color="primary" onClick={handleAddActividad}>
                     Agregar Actividad
                 </Button>
@@ -226,6 +268,7 @@ function ActivityPage() {
                             Clasificación
                           </TableSortLabel>
                         </TableCell>
+                        <TableCell>Tiempo (hrs)</TableCell>
                         <TableCell>Acciones</TableCell>
                         </TableRow>
                     </TableHead>
@@ -236,13 +279,17 @@ function ActivityPage() {
                             <TableCell>{actividad.titulo}</TableCell>
                             <TableCell>{actividad.objetivo}</TableCell>
                             <TableCell>{actividad.clasificacion}</TableCell>
+                            <TableCell>{actividad.tiempo_estimado}</TableCell>
                             <TableCell>
                             <Button onClick={() => {
-                                setEditActividad(actividad);
-                                setClasification(actividad.clasificacion);
-                                setDialogOpen(true);
+                              if(actividad.tiempo_estimado == null){
+                                actividad.tiempo_estimado = 0;
+                              }
+                              setEditActividad(actividad);
+                              setClasification(actividad.clasificacion);
+                              setDialogOpen(true);
                             }}>
-                                Editar
+                              Editar
                             </Button>
                             <Button color="error" onClick={() => handleDeleteActividad(actividad.id)}>
                                 Eliminar
@@ -314,6 +361,21 @@ function ActivityPage() {
                   Sustitución Temporal
                 </MenuItem>
             </Select>
+            <TextField
+              label="Tiempo Estimado (hrs)"
+              value={editActividad.tiempo_estimado}
+              onChange={(e) => {
+                // Validar que solo se ingresen números enteros
+                const newValue = e.target.value;
+                if (/^\d*$/.test(newValue)) {
+                  // Solo actualizar el valor si es un número entero
+                  setEditActividad({ ...editActividad, tiempo_estimado: newValue });
+                }
+              }}
+              fullWidth
+              sx={{ mb: 2 }}
+              inputProps={{ inputMode: 'numeric', pattern: '[0-9]*' }} // Sugerir teclado numérico en móviles
+            />
           </DialogContent>
           <DialogActions>
             <Button onClick={() => {
