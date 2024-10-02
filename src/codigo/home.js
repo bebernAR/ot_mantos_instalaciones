@@ -302,8 +302,22 @@ const Home = () => {
         console.log('Actividad eliminada con éxito.');
       } else if (response.status === 404) {
         console.error('Error: Actividad no encontrada.');
+        setMachines((prev) => ({
+          ...prev,
+          [originId]: {
+            ...prev[originId],
+            items: prev[originId].items.filter((_, i) => i !== index),
+          },
+        }));
       } else {
         console.error('Error al eliminar la actividad:', response.statusText);
+        setMachines((prev) => ({
+          ...prev,
+          [originId]: {
+            ...prev[originId],
+            items: prev[originId].items.filter((_, i) => i !== index),
+          },
+        }));
       }
     } catch (error) {
       console.error('Error al hacer la solicitud de eliminación a la API:', error);

@@ -6,9 +6,11 @@ import { Build, Visibility, Done, CleaningServices, SwapHoriz, EngineeringOutlin
 import { useTheme } from '@mui/material/styles';
 
 const ItemType = 'ACTIVITY';
-
-// Función para obtener el icono basado en la clasificación
 const getIconByClassification = (classification) => {
+  if (!classification) {
+    return <Done style={{ marginRight: '8px', color: '#9e9e9e' }} />; // Valor predeterminado si no hay clasificación
+  }
+
   switch (classification.trim()) {
     case 'Inspección':
       return <Visibility style={{ marginRight: '8px', color: '#1976d2' }} />;
@@ -24,6 +26,7 @@ const getIconByClassification = (classification) => {
       return <Done style={{ marginRight: '8px', color: '#9e9e9e' }} />;
   }
 };
+
 
 // Componente para renderizar una actividad
 const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecnicoAsignado, maquinaSeleccionada }) => {
@@ -79,7 +82,7 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecni
         alignItems: 'center',
       }}
     >
-      <strong>{activity.id} - {activity.actividad}</strong>  {/* Ahora accedemos a `actividad.actividad` */}
+      <strong>{activity.id} - {activity.actividad}</strong>
       {getIconByClassification(activity.clasificacion)}
       {origin !== 'activities' && (
         <span
@@ -100,9 +103,6 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecni
   );
 };
 
-
-
-// Zona de drop para los técnicos
 const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
   const theme = useTheme();
   const [{ isOver }, dropRef] = useDrop({
@@ -194,7 +194,6 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
   );
 };
 
-// Componente principal
 const Tecnicos = () => {
   const [activities, setActivities] = useState([]);
   const [tecnicos, setTecnicos] = useState([]);
@@ -206,17 +205,8 @@ const Tecnicos = () => {
 
   const theme = useTheme();
 
+  // Fetch de técnicos
   useEffect(() => {
-    const fetchActivities = async () => {
-      try {
-        const response = await fetch('https://teknia.app/api3/obtener_actividades_mantto');
-        const data = await response.json();
-        setActivities(data);
-      } catch (error) {
-        console.error('Error al obtener las actividades:', error);
-      }
-    };
-
     const fetchTecnicos = async () => {
       try {
         const response = await fetch('https://teknia.app/api4/bonos_istp/tecnicos_status/Activo');
@@ -227,10 +217,10 @@ const Tecnicos = () => {
       }
     };
 
-    fetchActivities();
     fetchTecnicos();
   }, []);
 
+  // Fetch de máquinas según la familia seleccionada
   useEffect(() => {
     if (familiaSeleccionada) {
       const fetchMaquinas = async () => {
@@ -249,16 +239,21 @@ const Tecnicos = () => {
 
   // Filtrar actividades para la máquina seleccionada
   useEffect(() => {
-    if (tecnicoAsignado && tecnicoAsignado.maquina && maquinas.length > 0) {
-      const maquinaSeleccionada = maquinas.find(m => m.maquina === tecnicoAsignado.maquina);
-      if (maquinaSeleccionada && maquinaSeleccionada.actividades) {
-        // Asegurarnos de que trabajamos con los objetos `actividad`
-        setActividadesMaquina(maquinaSeleccionada.actividades);
-      } else {
-        setActividadesMaquina([]);
-      }
+    if (tecnicoAsignado?.maquina) {
+      const fetchActividadesMaquina = async () => {
+        const maquinaSeleccionada = tecnicoAsignado.maquina;
+        const maquina = maquinas.find(m => m.maquina === maquinaSeleccionada);
+
+        if (maquina && maquina.actividades) {
+          setActivities(maquina.actividades);
+        } else {
+          setActivities([]);
+        }
+      };
+
+      fetchActividadesMaquina();
     }
-  }, [tecnicoAsignado, maquinas]);
+  }, [tecnicoAsignado?.maquina, maquinas]);
 
   const moveActivity = (index, destinationId, originId) => {
     const activity = originId === 'activities' ? activities[index] : tecnicoAsignado.items[index];
@@ -288,31 +283,23 @@ const Tecnicos = () => {
 
   const handleGuardar = () => {
     const actividadesActuales = tecnicoAsignado?.items || [];
-    const actividadesAñadidas = actividadesMaquina.filter(a => !actividadesActuales.some(actividad => actividad.titulo === a));
-
-    // Verificación de valores de técnico y máquina
     const maquinaSeleccionada = tecnicoAsignado?.maquina || "Ninguna máquina seleccionada";
     const tecnicoSeleccionado = tecnicoAsignado?.nombre_tecnico || "Ningún técnico seleccionado";
 
-    // Combina todas las actividades (ya establecidas + nuevas) y agrega máquina y técnico
-    const actividadesConDetalles = [...actividadesActuales, ...actividadesAñadidas].map(actividad => ({
+    const actividadesConDetalles = actividadesActuales.map(actividad => ({
       ...actividad,
       maquina: maquinaSeleccionada,
       tecnico: tecnicoSeleccionado
     }));
 
-    // Imprimir en consola el resultado
     console.log("Actividades con detalles de máquina y técnico:", actividadesConDetalles);
   };
-
-
-
 
   return (
     <DndProvider backend={HTML5Backend}>
       <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between' }}>
         <div style={{ width: '30%' }}>
-          <div style={{padding: "5px"}}>
+          <div style={{ padding: "5px" }}>
             <FormControl fullWidth>
               <InputLabel>Técnico</InputLabel>
               <Select
@@ -329,7 +316,7 @@ const Tecnicos = () => {
               </Select>
             </FormControl>
           </div>
-          <div style={{padding: "5px"}}>
+          <div style={{ padding: "5px" }}>
             <FormControl fullWidth>
               <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una familia</InputLabel>
               <Select
@@ -348,7 +335,7 @@ const Tecnicos = () => {
           </div>
 
           {familiaSeleccionada && (
-            <div style={{padding: "5px"}}>
+            <div style={{ padding: "5px" }}>
               <FormControl fullWidth>
                 <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una máquina</InputLabel>
                 <Select
@@ -385,12 +372,11 @@ const Tecnicos = () => {
                 moveActivity={moveActivity}
                 origin="activities"
                 removeActivity={removeActivity}
-                tecnicoAsignado={tecnicoAsignado} // Pasar técnico asignado
-                maquinaSeleccionada={tecnicoAsignado?.maquina} // Pasar
+                tecnicoAsignado={tecnicoAsignado}
+                maquinaSeleccionada={tecnicoAsignado?.maquina}
               />
             ))}
           </div>
-
         </div>
 
         <div style={{ width: '65%' }}>
@@ -401,30 +387,9 @@ const Tecnicos = () => {
               removeActivity={removeActivity}
             />
           )}
-
-          {/* Renderizar actividades asignadas a la máquina */}
-          {tecnicoAsignado?.maquina && (
-            <div style={{ marginTop: '20px' }}>
-              <Typography variant="h6" style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
-                Actividades asignadas a la máquina {tecnicoAsignado.maquina}
-              </Typography>
-              {actividadesMaquina.length > 0 ? (
-                actividadesMaquina.map((actividad, index) => (
-                  <div key={actividad.id} style={{ padding: '10px', borderBottom: '1px solid #ddd' }}>
-                    {actividad.actividad}  {/* Ahora accedemos a `actividad.actividad` */}
-                  </div>
-                ))
-              ) : (
-                <Typography variant="body1" style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>
-                  No hay actividades asignadas a esta máquina.
-                </Typography>
-              )}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Botón para imprimir actividades y máquina seleccionada en consola */}
       <Button
         variant="contained"
         color="primary"
