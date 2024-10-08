@@ -123,14 +123,20 @@ function PlanTrabajoPage() {
       <h1>Planes de Trabajo</h1>
       <Box sx={{ flexGrow: 1, p: 2 }}>
         <Grid2 container spacing={2}>
-            <Grid2 size={{ xs: 12, md: 4 }}>                
-                <TextField
-                    label="Número de Orden"
-                    value={newPlan.numero_orden}
-                    onChange={(e) => setNewPlan({ ...newPlan, numero_orden: e.target.value })}
+            <Grid2 size={{ xs: 12, md: 4 }}>
+                <InputLabel style={{padding: 10}}>Selecciona la actividad relacionada</InputLabel>
+                <Select
+                    value={newPlan.actividad_id}
+                    onChange={(e) => setNewPlan({ ...newPlan, actividad_id: e.target.value })}
                     style={{marginBottom: 10}}
                     fullWidth
-                />
+                >
+                    {actividades.map((actividad) => (
+                    <MenuItem key={actividad.id} value={actividad.id}>
+                        {actividad.titulo}
+                    </MenuItem>
+                    ))}
+                </Select>
                 <FormControl fullWidth>
                     <InputLabel>Tipo de Servicio</InputLabel>
                     <Select
@@ -145,19 +151,6 @@ function PlanTrabajoPage() {
                         <MenuItem value="Mantenimiento Completo">Mantenimiento Completo</MenuItem>
                     </Select>
                 </FormControl>
-                <InputLabel style={{padding: 10}}>Selecciona la actividad relacionada</InputLabel>
-                <Select
-                    value={newPlan.actividad_id}
-                    onChange={(e) => setNewPlan({ ...newPlan, actividad_id: e.target.value })}
-                    style={{marginBottom: 10}}
-                    fullWidth
-                >
-                    {actividades.map((actividad) => (
-                    <MenuItem key={actividad.id} value={actividad.id}>
-                        {actividad.titulo}
-                    </MenuItem>
-                    ))}
-                </Select>
                 <FormControl fullWidth>
                     <InputLabel>Estado</InputLabel>
                     <Select
@@ -239,7 +232,7 @@ function PlanTrabajoPage() {
                     <TableBody>
                     {displayedPlanes.map((plan) => (
                         <TableRow key={plan.id}>
-                        <TableCell>{plan.numero_orden}</TableCell>
+                        <TableCell>{plan.numero_orden == "" ? "Pendiente" : plan.numero_orden}</TableCell>
                         <TableCell>{plan.tipo_servicio}</TableCell>
                         <TableCell>
                             {actividades.find((act) => act.id === plan.actividad_id)?.titulo || 'No disponible'}
@@ -278,14 +271,20 @@ function PlanTrabajoPage() {
         <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)}>
             <DialogTitle>Editar Plan de Trabajo</DialogTitle>
             <DialogContent>
-                <TextField
-                label="Número de Orden"
-                value={editPlan.numero_orden}
-                onChange={(e) => setEditPlan({ ...editPlan, numero_orden: e.target.value })}
-                fullWidth
-                sx={{ mt: 2, mb: 2 }}
+                <InputLabel style={{padding: 10}}>Selecciona la actividad relacionada</InputLabel>
+                <Select
+                value={editPlan.actividad_id}
+                onChange={(e) => setEditPlan({ ...editPlan, actividad_id: e.target.value })}
                 style={{marginBottom: 10}}
-                />
+                fullWidth
+                sx={{ mb: 2 }}
+                >
+                {actividades.map((actividad) => (
+                    <MenuItem key={actividad.id} value={actividad.id}>
+                    {actividad.titulo}
+                    </MenuItem>
+                ))}
+                </Select>
                 {/* Tipo de Servicio */}
                 <FormControl fullWidth sx={{ mb: 2 }}>  {/* Añadir validación */}
                     <InputLabel>Tipo de Servicio</InputLabel>
@@ -301,20 +300,6 @@ function PlanTrabajoPage() {
                         <MenuItem value="Mantenimiento Completo">Mantenimiento Completo</MenuItem>
                     </Select>
                 </FormControl>
-                <InputLabel style={{padding: 10}}>Selecciona la actividad relacionada</InputLabel>
-                <Select
-                value={editPlan.actividad_id}
-                onChange={(e) => setEditPlan({ ...editPlan, actividad_id: e.target.value })}
-                style={{marginBottom: 10}}
-                fullWidth
-                sx={{ mb: 2 }}
-                >
-                {actividades.map((actividad) => (
-                    <MenuItem key={actividad.id} value={actividad.id}>
-                    {actividad.titulo}
-                    </MenuItem>
-                ))}
-                </Select>
                 <FormControl fullWidth>
                     <InputLabel>Estado</InputLabel>
                     <Select

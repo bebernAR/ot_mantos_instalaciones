@@ -13,6 +13,8 @@ import Home from './codigo/home';
 import ActivityPage from './codigo/actividadespage';
 import PlanTrabajoPage from './codigo/planes_trabajo';
 import Tecnicos from './codigo/tecnicos';
+import OrdenesTrabajoList from './codigo/ordenes_trabajo';
+import DetalleOrdenTrabajo from './codigo/detalle_orden';
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
@@ -50,10 +52,13 @@ function App() {
               ACTIVIDADES
             </Link>
             <Link component={RouterLink} to="/plan_trabajo" color="inherit" style={{ marginRight: '20px', textDecoration: "none" }} className='link-appbar'>
-              PLANES DE TRABAJO
+              PLANES
             </Link>
             <Link component={RouterLink} to="/tecnico" color="inherit" style={{ marginRight: '20px', textDecoration: "none" }} className='link-appbar'>
-              ORDEN DE SERVICIO
+              CREAR ORDEN
+            </Link>
+            <Link component={RouterLink} to="/ordenes_trabajo" color="inherit" style={{ marginRight: '20px', textDecoration: "none" }} className='link-appbar'>
+              ORDENES
             </Link>
 
             {/* Botón de cambio de tema */}
@@ -68,6 +73,8 @@ function App() {
           <Route path="/activities" element={<ActivityPage />} />
           <Route path="/plan_trabajo" element={<PlanTrabajoPage />} />
           <Route path="/tecnico" element={<Tecnicos />} />
+          <Route path="/ordenes_trabajo" element={<OrdenesTrabajoList />} />
+          <Route path="/detalle_orden/:numeroOrden" element={<DetalleOrdenTrabajo />} />
         </Routes>
       </Router>
     </ThemeProvider>

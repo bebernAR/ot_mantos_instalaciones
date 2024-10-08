@@ -72,7 +72,7 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => 
         alignItems: 'center',
       }}
     >
-      <strong>{activity.numero_orden || activity.id} - {activity.tipo_servicio} ({activity.maquina})</strong>
+      <strong>{activity.id} - {activity.titulo} ({activity.maquina})</strong>
       {getIconByClassification(activity.estado)}
       {origin !== 'activities' && (
         <span
@@ -252,6 +252,62 @@ const Tecnicos = () => {
     setOpenSnackbar(false);
   };
 
+  const crearOrdenTrabajo = async () => {
+    console.log(tecnicoAsignado.items);
+    try {
+      const response = await fetch(`https://teknia.app/api3/crear_orden_trabajo`, {
+        method: 'POST',  // Método de la solicitud
+        headers: {
+          'Content-Type': 'application/json',  // Indicamos que estamos enviando JSON
+        },
+        body: JSON.stringify({
+          nombre_persona: 'Developer AR',  // Reemplaza con el valor correspondiente
+          correo_persona: 'developer@asiarobotica.com',  // Reemplaza con el valor correspondiente
+          version: 1,
+          puede_editar: false,
+        }),
+      });
+  
+      if (response.ok) {  // Verifica si la respuesta fue exitosa (código 200 o 201)
+        const nuevaOrden = await response.json();  // Convertir la respuesta en JSON
+        console.log('Orden de trabajo creada:', nuevaOrden);
+  
+        // Actualiza los planes de trabajo con el ID de la orden creada
+        actualizarPlanesTrabajo(nuevaOrden.id);
+      } else {
+        console.error('Error en la respuesta de crear la orden de trabajo:', response.status);
+      }
+    } catch (error) {
+      console.error('Error al crear la orden de trabajo:', error);
+    }
+  };
+
+  const actualizarPlanesTrabajo = async (nuevaOrdenId) => {
+    
+    for (let i = 0; i < tecnicoAsignado.items.length; i++) {
+      const plan = tecnicoAsignado.items[i];
+  
+      try {
+        const response = await fetch(`https://teknia.app/api3/actualizar_orden_plan_trabajo/${plan.id}`, {
+          method: 'PUT',  // Método de la solicitud
+          headers: {
+            'Content-Type': 'application/json',  // Indicamos que estamos enviando JSON
+          },
+          body: JSON.stringify({
+            numero_orden: nuevaOrdenId,
+            posicion: i + +1
+          }),
+        });
+  
+        if (response.status === 200) {
+          console.log(`Plan de trabajo ${plan.id} actualizado con éxito`, response.data);
+        }
+      } catch (error) {
+        console.error(`Error al actualizar el plan de trabajo ${plan.id}:`, error);
+      }
+    }
+  };
+
   return (
     <DndProvider backend={HTML5Backend}>
       <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between' }}>
@@ -275,7 +331,7 @@ const Tecnicos = () => {
             </FormControl>
 
             {familiaSeleccionada && (
-              <div style={{ padding: "10px" }}>
+              <>
                 <FormControl fullWidth>
                   <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una máquina</InputLabel>
                   <Select
@@ -291,7 +347,7 @@ const Tecnicos = () => {
                     ))}
                   </Select>
                 </FormControl>
-              </div>
+              </>
             )}
 
             <FormControl fullWidth sx={{ mb: 2 }}>
@@ -357,7 +413,7 @@ const Tecnicos = () => {
           padding: '10px 20px',
           textTransform: 'none',
         }}
-        onClick={() => console.log(tecnicoAsignado.items)}
+        onClick={crearOrdenTrabajo} 
       >
         Guardar
       </Button>
