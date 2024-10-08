@@ -53,7 +53,7 @@ function App() {
               PLANES DE TRABAJO
             </Link>
             <Link component={RouterLink} to="/tecnico" color="inherit" style={{ marginRight: '20px', textDecoration: "none" }} className='link-appbar'>
-              ASIGNAR A TECNICO
+              ORDEN DE SERVICIO
             </Link>
 
             {/* Botón de cambio de tema */}

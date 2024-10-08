@@ -27,7 +27,6 @@ const getIconByClassification = (classification) => {
   }
 };
 
-
 // Componente para renderizar una actividad
 const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecnicoAsignado, maquinaSeleccionada }) => {
   const theme = useTheme();
@@ -93,28 +92,20 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecni
   );
 };
 
-const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
+const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity, workOrders }) => {
   const theme = useTheme();
-  const [{ isOver }, dropRef] = useDrop({
-    accept: ItemType,
-    drop: (item) => moveActivity(item.index, tecnico.id, item.origin),
-    collect: (monitor) => ({
-      isOver: monitor.isOver(),
-    }),
-  });
 
   return (
     <div
-      ref={dropRef}
+      ref={null} // No es necesario usar `dropRef` si no se arrastran elementos aquí
       style={{
         padding: '20px',
-        backgroundColor: isOver ? '#e3f2fd' : theme.palette.mode === 'dark' ? '#424242' : '#f9f9f9',
+        backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#f9f9f9',
         minHeight: '300px',
         border: '1px solid #ddd',
         borderRadius: '10px',
         marginBottom: '20px',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.1)',
-        transition: 'background-color 0.3s ease',
         textAlign: 'center',
         color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
       }}
@@ -127,28 +118,30 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
           marginBottom: '20px'
         }}
       >
-        {tecnico.nombre_tecnico}
+        {tecnico?.nombre_tecnico || "Orden de Servicio"}
       </Typography>
 
       <div
         style={{
           marginTop: '20px',
-          maxHeight: tecnico.items && tecnico.items.length > 3 ? '200px' : 'auto',
-          overflowY: tecnico.items && tecnico.items.length > 3 ? 'auto' : 'hidden',
+          maxHeight: '200px',
+          overflowY: 'auto',
           paddingRight: '10px',
         }}
       >
-        {tecnico.items && tecnico.items.length > 0 ? (
-          tecnico.items.map((item, index) => (
-            <Activity
-              key={item.id}
-              activity={item}
-              index={index}
-              moveActivity={moveActivity}
-              origin={tecnico.id}
-              removeActivity={removeActivity}
-
-            />
+        {workOrders && workOrders.length > 0 ? (
+          workOrders.map((order) => (
+            <div key={order.id} style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '8px' }}>
+              <Typography variant="body1">
+                {`Paso No.${order.numero_orden} - ${order.tipo_servicio} (${order.maquina})`}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                {`Estado: ${order.estado}, Versión: ${order.version}`}
+              </Typography>
+              <Typography variant="body2" color="textSecondary">
+                {`Fecha de creación: ${new Date(order.fecha_creacion).toLocaleDateString()}`}
+              </Typography>
+            </div>
           ))
         ) : (
           <Typography
@@ -159,7 +152,7 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
               marginTop: '20px',
             }}
           >
-            No hay actividades asignadas.
+            No hay órdenes de trabajo asignadas.
           </Typography>
         )}
       </div>
@@ -175,15 +168,15 @@ const Tecnicos = () => {
   const [familiaSeleccionada, setFamiliaSeleccionada] = useState('');
   const [maquinas, setMaquinas] = useState([]);
   const [actividadesMaquina, setActividadesMaquina] = useState([]);
-  const [openModal, setOpenModal] = useState(false); // Estado para el modal
+  const [openModal, setOpenModal] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-
-  const [reservas, setReservas] = useState([]); // Guardar reservas agendadas
-  const [selectedReserva, setSelectedReserva] = useState(null); // Datos de la reserva seleccionada
-  const [tipoServicio, setTipoServicio] = useState(''); // Tipo de servicio
-  const [selectedId, setSelectedId] = useState(null); // Guardar el ID en RAM
+  const [reservas, setReservas] = useState([]);
+  const [selectedReserva, setSelectedReserva] = useState(null);
+  const [tipoServicio, setTipoServicio] = useState('');
+  const [selectedId, setSelectedId] = useState(null);
+  const [workOrders, setWorkOrders] = useState([]); // Almacena las órdenes de trabajo obtenidas
 
   const theme = useTheme();
 
@@ -223,23 +216,24 @@ const Tecnicos = () => {
     }
   }, [familiaSeleccionada]);
 
-  // Filtrar actividades para la máquina seleccionada
+  // Fetch de órdenes de trabajo basadas en familia, máquina y tipo de servicio
   useEffect(() => {
-    if (tecnicoAsignado?.maquina) {
-      const fetchActividadesMaquina = async () => {
-        const maquinaSeleccionada = tecnicoAsignado.maquina;
-        const maquina = maquinas.find(m => m.maquina === maquinaSeleccionada);
-
-        if (maquina && maquina.actividades) {
-          setActivities(maquina.actividades);
-        } else {
-          setActivities([]);
+    if (familiaSeleccionada && tecnicoAsignado?.maquina && tipoServicio) {
+      const fetchWorkOrders = async () => {
+        try {
+          const response = await fetch(
+            `https://teknia.app/api3/obtener_planes_trabajo/${familiaSeleccionada}/${tecnicoAsignado.maquina}/${tipoServicio}`
+          );
+          const data = await response.json();
+          setWorkOrders(data); // Almacena las órdenes de trabajo en el estado
+        } catch (error) {
+          console.error('Error al obtener las órdenes de trabajo:', error);
         }
       };
 
-      fetchActividadesMaquina();
+      fetchWorkOrders();
     }
-  }, [tecnicoAsignado?.maquina, maquinas]);
+  }, [familiaSeleccionada, tecnicoAsignado?.maquina, tipoServicio]);
 
   const moveActivity = (index, destinationId, originId) => {
     const activity = originId === 'activities' ? activities[index] : tecnicoAsignado.items[index];
@@ -279,40 +273,33 @@ const Tecnicos = () => {
     }));
 
     console.log("Actividades con detalles de máquina y técnico:", actividadesConDetalles);
-    // Abrir el modal cuando el usuario haga clic en guardar
     setOpenModal(true);
   };
 
   const handleCloseModal = () => {
-    // Cerrar el modal
     setOpenModal(false);
   };
 
   const handleConfirmar = () => {
-    // Confirmar la selección y guardar
     console.log('ID:', selectedId);
     console.log('Ticket:', selectedTicket);
-    console.log('Tipo de Servicio:', tipoServicio);
     console.log('Fecha de Inicio:', startDate);
     console.log('Fecha de Fin:', endDate);
-    setOpenModal(false); // Cerrar el modal
+    setOpenModal(false);
   };
 
-  // Manejar selección del ticket
   const handleTicketChange = (event) => {
     const ticketSeleccionado = event.target.value;
     setSelectedTicket(ticketSeleccionado);
 
-    // Encontrar la reserva correspondiente al ticket seleccionado
     const reservaSeleccionada = reservas.find((reserva) => reserva.ticket === ticketSeleccionado);
     setSelectedReserva(reservaSeleccionada);
 
     if (reservaSeleccionada) {
-      // Llenar los inputs automáticamente
       setTipoServicio(reservaSeleccionada.tipo_servicio);
-      setStartDate(reservaSeleccionada.fecha_inicio.substring(0, 10)); // Formatear la fecha
-      setEndDate(reservaSeleccionada.fecha_final.substring(0, 10)); // Formatear la fecha
-      setSelectedId(reservaSeleccionada.id); // Guardar el ID en RAM
+      setStartDate(reservaSeleccionada.fecha_inicio.substring(0, 10));
+      setEndDate(reservaSeleccionada.fecha_final.substring(0, 10));
+      setSelectedId(reservaSeleccionada.id);
     }
   };
 
@@ -320,23 +307,7 @@ const Tecnicos = () => {
     <DndProvider backend={HTML5Backend}>
       <div style={{ padding: '20px', display: 'flex', justifyContent: 'space-between' }}>
         <div style={{ width: '30%' }}>
-          <div style={{ padding: "5px" }}>
-            <FormControl fullWidth>
-              <InputLabel>Técnico</InputLabel>
-              <Select
-                value={selectedTecnico}
-                onChange={handleTecnicoChange}
-                label="Técnico"
-                style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
-              >
-                {tecnicos.map((tecnico) => (
-                  <MenuItem key={tecnico.id} value={tecnico.id}>
-                    {tecnico.nombre_tecnico}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </div>
+          <div style={{ padding: "5px" }}></div>
           <div style={{ padding: "5px" }}>
             <FormControl fullWidth>
               <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una familia</InputLabel>
@@ -353,27 +324,44 @@ const Tecnicos = () => {
                 ))}
               </Select>
             </FormControl>
+
+            {familiaSeleccionada && (
+              <div style={{ padding: "0px", alignItems: 'end' }}>
+                <FormControl fullWidth>
+                  <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una máquina</InputLabel>
+                  <Select
+                    value={tecnicoAsignado?.maquina || ''}
+                    onChange={(e) => setTecnicoAsignado((prev) => ({ ...prev, maquina: e.target.value }))}
+                    label="Selecciona una máquina"
+                    style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
+                  >
+                    {maquinas.map((maquina) => (
+                      <MenuItem key={maquina.maquina} value={maquina.maquina}>
+                        {maquina.maquina}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </div>
+            )}
+
+            <FormControl fullWidth sx={{ mb: 2 }}>
+              <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Tipo de Servicio</InputLabel>
+              <Select
+                value={tipoServicio}
+                onChange={(e) => setTipoServicio(e.target.value)}
+                label="Tipo de Servicio"
+                style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
+              >
+                <MenuItem value="Instalación">Instalación</MenuItem>
+                <MenuItem value="Capacitación">Capacitación</MenuItem>
+                <MenuItem value="Instalación/Capacitación">Instalación/Capacitación</MenuItem>
+                <MenuItem value="Mantenimiento Estándar">Mantenimiento Estándar</MenuItem>
+                <MenuItem value="Mantenimiento Completo">Mantenimiento Completo</MenuItem>
+              </Select>
+            </FormControl>
           </div>
 
-          {familiaSeleccionada && (
-            <div style={{ padding: "5px" }}>
-              <FormControl fullWidth>
-                <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una máquina</InputLabel>
-                <Select
-                  value={tecnicoAsignado?.maquina || ''}
-                  onChange={(e) => setTecnicoAsignado((prev) => ({ ...prev, maquina: e.target.value }))}
-                  label="Selecciona una máquina"
-                  style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
-                >
-                  {maquinas.map((maquina) => (
-                    <MenuItem key={maquina.maquina} value={maquina.maquina}>
-                      {maquina.maquina}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </div>
-          )}
           <div style={{
             marginTop: '20px',
             border: '1px solid #ddd',
@@ -406,6 +394,7 @@ const Tecnicos = () => {
               tecnico={tecnicoAsignado}
               moveActivity={moveActivity}
               removeActivity={removeActivity}
+              workOrders={workOrders}
             />
           )}
         </div>
@@ -446,17 +435,6 @@ const Tecnicos = () => {
               ))}
             </Select>
           </FormControl>
-
-          {/* Input para tipo de servicio (se llena automáticamente) */}
-          <TextField
-            label="Tipo de Servicio"
-            fullWidth
-            value={tipoServicio}
-            InputProps={{
-              readOnly: true, // Campo de solo lectura
-            }}
-            style={{ marginBottom: '20px' }}
-          />
 
           {/* Input para fecha de inicio (se llena automáticamente) */}
           <TextField
