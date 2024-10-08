@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Button, MenuItem, Select, FormControl, InputLabel, Typography, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
+import { Button, MenuItem, Select, FormControl, InputLabel, Typography, Snackbar, Alert } from '@mui/material';
 import { Build, Visibility, Done, CleaningServices, SwapHoriz, EngineeringOutlined } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 
@@ -29,7 +29,7 @@ const getIconByClassification = (classification) => {
 };
 
 // Componente para renderizar una actividad
-const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecnicoAsignado, maquinaSeleccionada }) => {
+const Activity = ({ activity, index, moveActivity, origin, removeActivity }) => {
   const theme = useTheme();
   const [{ isDragging }, dragRef] = useDrag({
     type: ItemType,
@@ -93,16 +93,23 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecni
   );
 };
 
-const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity, workOrders }) => {
+// Componente para el dropzone del técnico
+const TecnicoDropZone = ({ tecnicoAsignado, moveActivity, removeActivity }) => {
   const theme = useTheme();
+  const [, dropRef] = useDrop({
+    accept: ItemType,
+    drop: (item) => {
+      moveActivity(item.index, tecnicoAsignado.items.length, item.origin);
+    },
+  });
 
   return (
     <div
-      ref={null} // No es necesario usar `dropRef` si no se arrastran elementos aquí
+      ref={dropRef}
       style={{
         padding: '20px',
         backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#f9f9f9',
-        minHeight: '300px',
+        minHeight: '100%',
         border: '1px solid #ddd',
         borderRadius: '10px',
         marginBottom: '20px',
@@ -123,56 +130,37 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity, workOrders }) 
       </Typography>
 
       <div
-  style={{
-    marginTop: '20px',
-    maxHeight: '200px',
-    overflowY: 'auto',
-    paddingRight: '10px',
-  }}
->
-
-  
-  {workOrders.length > 0 ? ( // Verificamos si hay órdenes de trabajo
-    workOrders.map((order, index) => (
-      <div key={order.id} style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '8px' }}>
-        <Typography variant="body1">
-          {`Paso No.${index + 1} - ${order.tipo_servicio} (${order.maquina})`}
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          {`Estado: ${order.estado}, Versión: ${order.version}`}
-        </Typography>
-        <Typography variant="body2" color="textSecondary">
-          {`Fecha de creación: ${new Date(order.fecha_creacion).toLocaleDateString()}`}
-        </Typography>
-        <span
-          onClick={() => removeActivity(index, 'assignedActivities')} // Llama a removeActivity cuando se hace clic
-          style={{
-            position: 'absolute',
-            top: '5px',
-            right: '10px',
-            cursor: 'pointer',
-            color: 'red',
-            fontSize: '14px',
-          }}
-        >
-          ✖
-        </span>
+        style={{
+          marginTop: '20px',
+          maxHeight: '500px',
+          overflowY: 'auto',
+          paddingRight: '10px',
+        }}
+      >
+        {tecnicoAsignado.items.length > 0 ? (
+          tecnicoAsignado.items.map((order, index) => (
+            <Activity
+              key={order.id}
+              activity={order}
+              index={index}
+              moveActivity={moveActivity}
+              origin="assignedActivities"
+              removeActivity={removeActivity}
+            />
+          ))
+        ) : (
+          <Typography
+            variant="body1"
+            style={{
+              textAlign: 'center',
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+              marginTop: '20px',
+            }}
+          >
+            No hay órdenes de trabajo asignadas.
+          </Typography>
+        )}
       </div>
-    ))
-  ) : (
-    <Typography
-      variant="body1"
-      style={{
-        textAlign: 'center',
-        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-        marginTop: '20px',
-      }}
-    >
-      No hay órdenes de trabajo asignadas.
-    </Typography>
-  )}
-</div>
-
     </div>
   );
 };
@@ -181,12 +169,14 @@ const Tecnicos = () => {
   const [activities, setActivities] = useState([]);
   const [tecnicos, setTecnicos] = useState([]);
   const [selectedTecnico, setSelectedTecnico] = useState('');
-  const [tecnicoAsignado, setTecnicoAsignado] = useState(null);
+  const [tecnicoAsignado, setTecnicoAsignado] = useState({ items: [] });
   const [familiaSeleccionada, setFamiliaSeleccionada] = useState('');
   const [maquinas, setMaquinas] = useState([]);
   const [maquinaSeleccionada, setMaquinaSeleccionada] = useState('');
   const [tipoServicio, setTipoServicio] = useState('');
   const [workOrders, setWorkOrders] = useState([]); // Almacena las órdenes de trabajo obtenidas
+  const [errorMessage, setErrorMessage] = useState(''); // Estado para mostrar el mensaje de error
+  const [openSnackbar, setOpenSnackbar] = useState(false); // Control del Snackbar
 
   const theme = useTheme();
 
@@ -215,40 +205,51 @@ const Tecnicos = () => {
             `https://teknia.app/api3/obtener_planes_trabajo/${familiaSeleccionada}/${maquinaSeleccionada}/${tipoServicio}`
           );
           const data = await response.json();
-          console.log('Datos de la API:', data); // Aquí puedes ver qué estructura tienen los datos
           setWorkOrders(data); // Asegúrate de que `data` es un array antes de establecerlo en el estado
         } catch (error) {
           console.error('Error al obtener las órdenes de trabajo:', error);
         }
       };
-  
+
       fetchWorkOrders();
     }
   }, [familiaSeleccionada, maquinaSeleccionada, tipoServicio]);
-  
 
-  const moveActivity = (index, destinationId, originId) => {
-    const activity = originId === 'activities' ? workOrders[index] : tecnicoAsignado.items[index];
+  const moveActivity = (sourceIndex, destinationIndex, origin) => {
+    if (origin === 'activities') {
+      const activity = workOrders[sourceIndex];
+      const activityAlreadyExists = tecnicoAsignado.items.some((item) => item.id === activity.id);
 
-    if (!tecnicoAsignado.items.some((item) => item.id === activity.id)) {
-      setTecnicoAsignado((prev) => ({
-        ...prev,
-        items: [...prev.items, activity],
-      }));
+      if (!activityAlreadyExists) {
+        // Mover de la lista de actividades a la lista asignada
+        const updatedActivities = [...tecnicoAsignado.items, activity];
+        setTecnicoAsignado({ items: updatedActivities });
+      } else {
+        // Mostrar el mensaje de error si la actividad ya está agregada
+        setErrorMessage(`La actividad ya está agregada a la Orden de Servicio.`);
+        setOpenSnackbar(true);
+      }
+    } else if (origin === 'assignedActivities') {
+      // Mover dentro de la lista de asignaciones (reorganización)
+      const updatedItems = [...tecnicoAsignado.items];
+      const [movedItem] = updatedItems.splice(sourceIndex, 1);
+      updatedItems.splice(destinationIndex, 0, movedItem);
+      setTecnicoAsignado({ items: updatedItems });
     }
   };
 
-  const removeActivity = (index, originId) => {
-    if (originId === 'assignedActivities') {
-      // Elimina de las actividades asignadas (orden de servicio)
+  const removeActivity = (index, origin) => {
+    if (origin === 'assignedActivities') {
+      // Elimina de las actividades asignadas
       setTecnicoAsignado((prev) => ({
         ...prev,
         items: prev.items.filter((_, i) => i !== index),
       }));
-    } else {
-      // Elimina de las actividades disponibles
-      setActivities((prev) => prev.filter((_, i) => i !== index));
     }
+  };
+
+  const handleCloseSnackbar = () => {
+    setOpenSnackbar(false);
   };
 
   return (
@@ -310,15 +311,17 @@ const Tecnicos = () => {
             </FormControl>
           </div>
 
-          <div style={{
-            marginTop: '20px',
-            border: '1px solid #ddd',
-            borderRadius: '10px',
-            padding: '10px',
-            backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#ffffff',
-            maxHeight: '400px',
-            overflowY: 'auto'
-          }}>
+          <div
+            style={{
+              marginTop: '20px',
+              border: '1px solid #ddd',
+              borderRadius: '10px',
+              padding: '10px',
+              backgroundColor: theme.palette.mode === 'dark' ? '#424242' : '#ffffff',
+              maxHeight: '400px',
+              overflowY: 'auto'
+            }}
+          >
             <h3 style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Actividades</h3>
 
             {workOrders.map((workOrder, index) => (
@@ -329,8 +332,6 @@ const Tecnicos = () => {
                 moveActivity={moveActivity}
                 origin="activities"
                 removeActivity={removeActivity}
-                tecnicoAsignado={tecnicoAsignado}
-                maquinaSeleccionada={maquinaSeleccionada}
               />
             ))}
           </div>
@@ -338,9 +339,9 @@ const Tecnicos = () => {
 
         <div style={{ width: '65%' }}>
           <TecnicoDropZone
+            tecnicoAsignado={tecnicoAsignado}
             moveActivity={moveActivity}
             removeActivity={removeActivity}
-            workOrders={tecnicoAsignado?.items || []}
           />
         </div>
       </div>
@@ -356,10 +357,21 @@ const Tecnicos = () => {
           padding: '10px 20px',
           textTransform: 'none',
         }}
-        onClick={() => console.log(tecnicoAsignado)}
+        onClick={() => console.log(tecnicoAsignado.items)}
       >
         Guardar
       </Button>
+
+      {/* Snackbar para mostrar el mensaje de error */}
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={3000}
+        onClose={handleCloseSnackbar}
+      >
+        <Alert onClose={handleCloseSnackbar} severity="warning" sx={{ width: '100%' }}>
+          {errorMessage}
+        </Alert>
+      </Snackbar>
     </DndProvider>
   );
 };
