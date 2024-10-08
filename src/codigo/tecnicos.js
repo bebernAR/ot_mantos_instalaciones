@@ -6,6 +6,7 @@ import { Build, Visibility, Done, CleaningServices, SwapHoriz, EngineeringOutlin
 import { useTheme } from '@mui/material/styles';
 
 const ItemType = 'ACTIVITY';
+
 const getIconByClassification = (classification) => {
   if (!classification) {
     return <Done style={{ marginRight: '8px', color: '#9e9e9e' }} />; // Valor predeterminado si no hay clasificación
@@ -71,8 +72,8 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecni
         alignItems: 'center',
       }}
     >
-      <strong>{activity.id} - {activity.actividad}</strong>
-      {getIconByClassification(activity.clasificacion)}
+      <strong>{activity.numero_orden || activity.id} - {activity.tipo_servicio} ({activity.maquina})</strong>
+      {getIconByClassification(activity.estado)}
       {origin !== 'activities' && (
         <span
           onClick={() => removeActivity(index, origin)}
@@ -118,44 +119,60 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity, workOrders }) 
           marginBottom: '20px'
         }}
       >
-        {tecnico?.nombre_tecnico || "Orden de Servicio"}
+        Orden de Servicio
       </Typography>
 
       <div
-        style={{
-          marginTop: '20px',
-          maxHeight: '200px',
-          overflowY: 'auto',
-          paddingRight: '10px',
-        }}
-      >
-        {workOrders && workOrders.length > 0 ? (
-          workOrders.map((order) => (
-            <div key={order.id} style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '8px' }}>
-              <Typography variant="body1">
-                {`Paso No.${order.numero_orden} - ${order.tipo_servicio} (${order.maquina})`}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                {`Estado: ${order.estado}, Versión: ${order.version}`}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                {`Fecha de creación: ${new Date(order.fecha_creacion).toLocaleDateString()}`}
-              </Typography>
-            </div>
-          ))
-        ) : (
-          <Typography
-            variant="body1"
-            style={{
-              textAlign: 'center',
-              color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
-              marginTop: '20px',
-            }}
-          >
-            No hay órdenes de trabajo asignadas.
-          </Typography>
-        )}
+  style={{
+    marginTop: '20px',
+    maxHeight: '200px',
+    overflowY: 'auto',
+    paddingRight: '10px',
+  }}
+>
+
+  
+  {workOrders.length > 0 ? ( // Verificamos si hay órdenes de trabajo
+    workOrders.map((order, index) => (
+      <div key={order.id} style={{ marginBottom: '10px', padding: '10px', backgroundColor: '#f0f0f0', borderRadius: '8px' }}>
+        <Typography variant="body1">
+          {`Paso No.${index + 1} - ${order.tipo_servicio} (${order.maquina})`}
+        </Typography>
+        <Typography variant="body2" color="textSecondary">
+          {`Estado: ${order.estado}, Versión: ${order.version}`}
+        </Typography>
+        <Typography variant="body2" color="textSecondary">
+          {`Fecha de creación: ${new Date(order.fecha_creacion).toLocaleDateString()}`}
+        </Typography>
+        <span
+          onClick={() => removeActivity(index, 'assignedActivities')} // Llama a removeActivity cuando se hace clic
+          style={{
+            position: 'absolute',
+            top: '5px',
+            right: '10px',
+            cursor: 'pointer',
+            color: 'red',
+            fontSize: '14px',
+          }}
+        >
+          ✖
+        </span>
       </div>
+    ))
+  ) : (
+    <Typography
+      variant="body1"
+      style={{
+        textAlign: 'center',
+        color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000',
+        marginTop: '20px',
+      }}
+    >
+      No hay órdenes de trabajo asignadas.
+    </Typography>
+  )}
+</div>
+
     </div>
   );
 };
@@ -167,37 +184,11 @@ const Tecnicos = () => {
   const [tecnicoAsignado, setTecnicoAsignado] = useState(null);
   const [familiaSeleccionada, setFamiliaSeleccionada] = useState('');
   const [maquinas, setMaquinas] = useState([]);
-  const [actividadesMaquina, setActividadesMaquina] = useState([]);
-  const [openModal, setOpenModal] = useState(false);
-  const [selectedTicket, setSelectedTicket] = useState('');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-  const [reservas, setReservas] = useState([]);
-  const [selectedReserva, setSelectedReserva] = useState(null);
+  const [maquinaSeleccionada, setMaquinaSeleccionada] = useState('');
   const [tipoServicio, setTipoServicio] = useState('');
-  const [selectedId, setSelectedId] = useState(null);
   const [workOrders, setWorkOrders] = useState([]); // Almacena las órdenes de trabajo obtenidas
 
   const theme = useTheme();
-
-  // Fetch de técnicos
-  useEffect(() => {
-    const fetchTecnicos = async () => {
-      try {
-        const response = await fetch('https://teknia.app/api4/bonos_istp/tecnicos_status/Activo');
-        const data = await response.json();
-        setTecnicos(data);
-
-        const response1 = await fetch('https://teknia.app/api/reservas_agendadas/');
-        const data1 = await response1.json();
-        setReservas(data1);
-      } catch (error) {
-        console.error('Error al obtener los técnicos:', error);
-      }
-    };
-
-    fetchTecnicos();
-  }, []);
 
   // Fetch de máquinas según la familia seleccionada
   useEffect(() => {
@@ -206,7 +197,7 @@ const Tecnicos = () => {
         try {
           const response = await fetch(`https://teknia.app/api3/actividades_tecnicas/maquinas_actividades/${familiaSeleccionada}`);
           const data = await response.json();
-          setMaquinas(data);
+          setMaquinas(data); // Guardamos las máquinas relacionadas con la familia seleccionada
         } catch (error) {
           console.error('Error al obtener las máquinas:', error);
         }
@@ -216,27 +207,28 @@ const Tecnicos = () => {
     }
   }, [familiaSeleccionada]);
 
-  // Fetch de órdenes de trabajo basadas en familia, máquina y tipo de servicio
   useEffect(() => {
-    if (familiaSeleccionada && tecnicoAsignado?.maquina && tipoServicio) {
+    if (familiaSeleccionada && maquinaSeleccionada && tipoServicio) {
       const fetchWorkOrders = async () => {
         try {
           const response = await fetch(
-            `https://teknia.app/api3/obtener_planes_trabajo/${familiaSeleccionada}/${tecnicoAsignado.maquina}/${tipoServicio}`
+            `https://teknia.app/api3/obtener_planes_trabajo/${familiaSeleccionada}/${maquinaSeleccionada}/${tipoServicio}`
           );
           const data = await response.json();
-          setWorkOrders(data); // Almacena las órdenes de trabajo en el estado
+          console.log('Datos de la API:', data); // Aquí puedes ver qué estructura tienen los datos
+          setWorkOrders(data); // Asegúrate de que `data` es un array antes de establecerlo en el estado
         } catch (error) {
           console.error('Error al obtener las órdenes de trabajo:', error);
         }
       };
-
+  
       fetchWorkOrders();
     }
-  }, [familiaSeleccionada, tecnicoAsignado?.maquina, tipoServicio]);
+  }, [familiaSeleccionada, maquinaSeleccionada, tipoServicio]);
+  
 
   const moveActivity = (index, destinationId, originId) => {
-    const activity = originId === 'activities' ? activities[index] : tecnicoAsignado.items[index];
+    const activity = originId === 'activities' ? workOrders[index] : tecnicoAsignado.items[index];
 
     if (!tecnicoAsignado.items.some((item) => item.id === activity.id)) {
       setTecnicoAsignado((prev) => ({
@@ -247,59 +239,15 @@ const Tecnicos = () => {
   };
 
   const removeActivity = (index, originId) => {
-    if (originId !== 'activities') {
+    if (originId === 'assignedActivities') {
+      // Elimina de las actividades asignadas (orden de servicio)
       setTecnicoAsignado((prev) => ({
         ...prev,
         items: prev.items.filter((_, i) => i !== index),
       }));
-    }
-  };
-
-  const handleTecnicoChange = (event) => {
-    const tecnico = tecnicos.find(t => t.id === event.target.value);
-    setSelectedTecnico(event.target.value);
-    setTecnicoAsignado({ ...tecnico, items: [] });
-  };
-
-  const handleGuardar = () => {
-    const actividadesActuales = tecnicoAsignado?.items || [];
-    const maquinaSeleccionada = tecnicoAsignado?.maquina || "Ninguna máquina seleccionada";
-    const tecnicoSeleccionado = tecnicoAsignado?.nombre_tecnico || "Ningún técnico seleccionado";
-
-    const actividadesConDetalles = actividadesActuales.map(actividad => ({
-      ...actividad,
-      maquina: maquinaSeleccionada,
-      tecnico: tecnicoSeleccionado
-    }));
-
-    console.log("Actividades con detalles de máquina y técnico:", actividadesConDetalles);
-    setOpenModal(true);
-  };
-
-  const handleCloseModal = () => {
-    setOpenModal(false);
-  };
-
-  const handleConfirmar = () => {
-    console.log('ID:', selectedId);
-    console.log('Ticket:', selectedTicket);
-    console.log('Fecha de Inicio:', startDate);
-    console.log('Fecha de Fin:', endDate);
-    setOpenModal(false);
-  };
-
-  const handleTicketChange = (event) => {
-    const ticketSeleccionado = event.target.value;
-    setSelectedTicket(ticketSeleccionado);
-
-    const reservaSeleccionada = reservas.find((reserva) => reserva.ticket === ticketSeleccionado);
-    setSelectedReserva(reservaSeleccionada);
-
-    if (reservaSeleccionada) {
-      setTipoServicio(reservaSeleccionada.tipo_servicio);
-      setStartDate(reservaSeleccionada.fecha_inicio.substring(0, 10));
-      setEndDate(reservaSeleccionada.fecha_final.substring(0, 10));
-      setSelectedId(reservaSeleccionada.id);
+    } else {
+      // Elimina de las actividades disponibles
+      setActivities((prev) => prev.filter((_, i) => i !== index));
     }
   };
 
@@ -326,12 +274,12 @@ const Tecnicos = () => {
             </FormControl>
 
             {familiaSeleccionada && (
-              <div style={{ padding: "0px", alignItems: 'end' }}>
+              <div style={{ padding: "10px" }}>
                 <FormControl fullWidth>
                   <InputLabel style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Selecciona una máquina</InputLabel>
                   <Select
-                    value={tecnicoAsignado?.maquina || ''}
-                    onChange={(e) => setTecnicoAsignado((prev) => ({ ...prev, maquina: e.target.value }))}
+                    value={maquinaSeleccionada}
+                    onChange={(e) => setMaquinaSeleccionada(e.target.value)}
                     label="Selecciona una máquina"
                     style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}
                   >
@@ -373,30 +321,27 @@ const Tecnicos = () => {
           }}>
             <h3 style={{ color: theme.palette.mode === 'dark' ? '#ffffff' : '#000000' }}>Actividades</h3>
 
-            {activities.map((activity, index) => (
+            {workOrders.map((workOrder, index) => (
               <Activity
-                key={activity.id}
-                activity={activity}
+                key={workOrder.id}
+                activity={workOrder}
                 index={index}
                 moveActivity={moveActivity}
                 origin="activities"
                 removeActivity={removeActivity}
                 tecnicoAsignado={tecnicoAsignado}
-                maquinaSeleccionada={tecnicoAsignado?.maquina}
+                maquinaSeleccionada={maquinaSeleccionada}
               />
             ))}
           </div>
         </div>
 
         <div style={{ width: '65%' }}>
-          {tecnicoAsignado && (
-            <TecnicoDropZone
-              tecnico={tecnicoAsignado}
-              moveActivity={moveActivity}
-              removeActivity={removeActivity}
-              workOrders={workOrders}
-            />
-          )}
+          <TecnicoDropZone
+            moveActivity={moveActivity}
+            removeActivity={removeActivity}
+            workOrders={tecnicoAsignado?.items || []}
+          />
         </div>
       </div>
 
@@ -411,65 +356,10 @@ const Tecnicos = () => {
           padding: '10px 20px',
           textTransform: 'none',
         }}
-        onClick={handleGuardar}
+        onClick={() => console.log(tecnicoAsignado)}
       >
         Guardar
       </Button>
-
-      {/* Modal para pedir ticket y fechas */}
-      <Dialog open={openModal} onClose={handleCloseModal}>
-        <DialogTitle>Datos del Ticket</DialogTitle>
-        <DialogContent>
-          {/* Select para escoger el ticket */}
-          <FormControl fullWidth style={{ marginBottom: '20px' }}>
-            <InputLabel>Ticket</InputLabel>
-            <Select
-              value={selectedTicket}
-              onChange={handleTicketChange}
-              label="Ticket"
-            >
-              {reservas.map((reserva, index) => (
-                <MenuItem key={`${reserva.id}-${index}`} value={reserva.ticket}>
-                  {`${reserva.ticket} --- ${reserva.razon_social}`}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-
-          {/* Input para fecha de inicio (se llena automáticamente) */}
-          <TextField
-            label="Fecha de Inicio"
-            type="date"
-            fullWidth
-            value={startDate}
-            InputLabelProps={{
-              shrink: true,
-            }}
-            style={{ marginBottom: '20px' }}
-            InputProps={{
-              readOnly: true, // Campo de solo lectura
-            }}
-          />
-
-          {/* Input para fecha de fin (se llena automáticamente) */}
-          <TextField
-            label="Fecha de Fin"
-            type="date"
-            fullWidth
-            value={endDate}
-            InputLabelProps={{
-              shrink: true,
-            }}
-            InputProps={{
-              readOnly: true, // Campo de solo lectura
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseModal} color="secondary">Cancelar</Button>
-          <Button onClick={handleConfirmar} color="primary">Confirmar</Button>
-        </DialogActions>
-      </Dialog>
     </DndProvider>
   );
 };
