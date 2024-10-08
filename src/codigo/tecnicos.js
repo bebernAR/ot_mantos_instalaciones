@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
-import { Button, MenuItem, Select, FormControl, InputLabel, Typography } from '@mui/material';
+import { Button, MenuItem, Select, FormControl, InputLabel, Typography, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material';
 import { Build, Visibility, Done, CleaningServices, SwapHoriz, EngineeringOutlined } from '@mui/icons-material';
 import { useTheme } from '@mui/material/styles';
 
@@ -48,16 +48,6 @@ const Activity = ({ activity, index, moveActivity, origin, removeActivity, tecni
       }
     },
   });
-
-  const handleGuardar = () => {
-    const actividadConDetalles = {
-      ...activity,
-      tecnico: tecnicoAsignado?.nombre_tecnico || "Ningún técnico seleccionado",
-      maquina: maquinaSeleccionada || "Ninguna máquina seleccionada",
-    };
-
-    console.log("Actividad guardada con detalles de técnico y máquina:", actividadConDetalles);
-  };
 
   return (
     <div
@@ -140,23 +130,6 @@ const TecnicoDropZone = ({ tecnico, moveActivity, removeActivity }) => {
         {tecnico.nombre_tecnico}
       </Typography>
 
-      <Button
-        variant="contained"
-        color="primary"
-        style={{
-          marginTop: '20px',
-          backgroundColor: theme.palette.mode === 'dark' ? '#1976d2' : '#007bff',
-          color: '#fff',
-          borderRadius: '20px',
-          padding: '10px 20px',
-          textTransform: 'none',
-          boxShadow: '0 4px 8px rgba(25, 118, 210, 0.4)',
-        }}
-        onClick={() => console.log("Actividades guardadas: ", tecnico.items)}
-      >
-        Guardar
-      </Button>
-
       <div
         style={{
           marginTop: '20px',
@@ -202,6 +175,15 @@ const Tecnicos = () => {
   const [familiaSeleccionada, setFamiliaSeleccionada] = useState('');
   const [maquinas, setMaquinas] = useState([]);
   const [actividadesMaquina, setActividadesMaquina] = useState([]);
+  const [openModal, setOpenModal] = useState(false); // Estado para el modal
+  const [selectedTicket, setSelectedTicket] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
+  const [reservas, setReservas] = useState([]); // Guardar reservas agendadas
+  const [selectedReserva, setSelectedReserva] = useState(null); // Datos de la reserva seleccionada
+  const [tipoServicio, setTipoServicio] = useState(''); // Tipo de servicio
+  const [selectedId, setSelectedId] = useState(null); // Guardar el ID en RAM
 
   const theme = useTheme();
 
@@ -212,6 +194,10 @@ const Tecnicos = () => {
         const response = await fetch('https://teknia.app/api4/bonos_istp/tecnicos_status/Activo');
         const data = await response.json();
         setTecnicos(data);
+
+        const response1 = await fetch('https://teknia.app/api/reservas_agendadas/');
+        const data1 = await response1.json();
+        setReservas(data1);
       } catch (error) {
         console.error('Error al obtener los técnicos:', error);
       }
@@ -293,6 +279,41 @@ const Tecnicos = () => {
     }));
 
     console.log("Actividades con detalles de máquina y técnico:", actividadesConDetalles);
+    // Abrir el modal cuando el usuario haga clic en guardar
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    // Cerrar el modal
+    setOpenModal(false);
+  };
+
+  const handleConfirmar = () => {
+    // Confirmar la selección y guardar
+    console.log('ID:', selectedId);
+    console.log('Ticket:', selectedTicket);
+    console.log('Tipo de Servicio:', tipoServicio);
+    console.log('Fecha de Inicio:', startDate);
+    console.log('Fecha de Fin:', endDate);
+    setOpenModal(false); // Cerrar el modal
+  };
+
+  // Manejar selección del ticket
+  const handleTicketChange = (event) => {
+    const ticketSeleccionado = event.target.value;
+    setSelectedTicket(ticketSeleccionado);
+
+    // Encontrar la reserva correspondiente al ticket seleccionado
+    const reservaSeleccionada = reservas.find((reserva) => reserva.ticket === ticketSeleccionado);
+    setSelectedReserva(reservaSeleccionada);
+
+    if (reservaSeleccionada) {
+      // Llenar los inputs automáticamente
+      setTipoServicio(reservaSeleccionada.tipo_servicio);
+      setStartDate(reservaSeleccionada.fecha_inicio.substring(0, 10)); // Formatear la fecha
+      setEndDate(reservaSeleccionada.fecha_final.substring(0, 10)); // Formatear la fecha
+      setSelectedId(reservaSeleccionada.id); // Guardar el ID en RAM
+    }
   };
 
   return (
@@ -405,6 +426,72 @@ const Tecnicos = () => {
       >
         Guardar
       </Button>
+
+      {/* Modal para pedir ticket y fechas */}
+      <Dialog open={openModal} onClose={handleCloseModal}>
+        <DialogTitle>Datos del Ticket</DialogTitle>
+        <DialogContent>
+          {/* Select para escoger el ticket */}
+          <FormControl fullWidth style={{ marginBottom: '20px' }}>
+            <InputLabel>Ticket</InputLabel>
+            <Select
+              value={selectedTicket}
+              onChange={handleTicketChange}
+              label="Ticket"
+            >
+              {reservas.map((reserva, index) => (
+                <MenuItem key={`${reserva.id}-${index}`} value={reserva.ticket}>
+                  {`${reserva.ticket} --- ${reserva.razon_social}`}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          {/* Input para tipo de servicio (se llena automáticamente) */}
+          <TextField
+            label="Tipo de Servicio"
+            fullWidth
+            value={tipoServicio}
+            InputProps={{
+              readOnly: true, // Campo de solo lectura
+            }}
+            style={{ marginBottom: '20px' }}
+          />
+
+          {/* Input para fecha de inicio (se llena automáticamente) */}
+          <TextField
+            label="Fecha de Inicio"
+            type="date"
+            fullWidth
+            value={startDate}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            style={{ marginBottom: '20px' }}
+            InputProps={{
+              readOnly: true, // Campo de solo lectura
+            }}
+          />
+
+          {/* Input para fecha de fin (se llena automáticamente) */}
+          <TextField
+            label="Fecha de Fin"
+            type="date"
+            fullWidth
+            value={endDate}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            InputProps={{
+              readOnly: true, // Campo de solo lectura
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseModal} color="secondary">Cancelar</Button>
+          <Button onClick={handleConfirmar} color="primary">Confirmar</Button>
+        </DialogActions>
+      </Dialog>
     </DndProvider>
   );
 };

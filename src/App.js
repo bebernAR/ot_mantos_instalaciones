@@ -11,7 +11,7 @@ import { BrowserRouter as Router, Route, Routes, Link as RouterLink } from 'reac
 import { createTheme, ThemeProvider, CssBaseline } from '@mui/material';
 import Home from './codigo/home';
 import ActivityPage from './codigo/actividadespage';
-import Equipos from './codigo/equipos';
+import PlanTrabajoPage from './codigo/planes_trabajo';
 import Tecnicos from './codigo/tecnicos';
 
 function App() {
@@ -49,8 +49,8 @@ function App() {
             <Link component={RouterLink} to="/activities" color="inherit" style={{ marginRight: '20px', textDecoration: "none" }} className='link-appbar'>
               ACTIVIDADES
             </Link>
-            <Link component={RouterLink} to="/equipos" color="inherit" style={{ marginRight: '20px', textDecoration: "none" }} className='link-appbar'>
-              EQUIPOS
+            <Link component={RouterLink} to="/plan_trabajo" color="inherit" style={{ marginRight: '20px', textDecoration: "none" }} className='link-appbar'>
+              PLANES DE TRABAJO
             </Link>
             <Link component={RouterLink} to="/tecnico" color="inherit" style={{ marginRight: '20px', textDecoration: "none" }} className='link-appbar'>
               ASIGNAR A TECNICO
@@ -66,7 +66,7 @@ function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/activities" element={<ActivityPage />} />
-          <Route path="/equipos" element={<Equipos />} />
+          <Route path="/plan_trabajo" element={<PlanTrabajoPage />} />
           <Route path="/tecnico" element={<Tecnicos />} />
         </Routes>
       </Router>
